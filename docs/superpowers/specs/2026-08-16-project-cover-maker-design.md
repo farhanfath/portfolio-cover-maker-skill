@@ -576,9 +576,10 @@ sesuai kolom penanganan, dan assert pesannya menyebut field yang bermasalah.
 
 **Test #4 — Pemilihan layout dan render set.**
 Untuk `screens.length` 1 sampai 6, assert pilihan `auto` dan isi render set persis sesuai
-§8.3. Minimal mencakup: 1 screen → set berisi 2 (`solo`, `split-right`); 2 screen → set
-berisi 3; 3 screen → set berisi 4 tanpa `scatter`; 6 screen → set berisi 4 dengan `scatter`
-di urutan pertama. Plus: `layout` eksplisit → set berisi tepat 1.
+§8.3. Minimal mencakup: 1 screen → set berisi tepat 1 (`solo` saja, karena `split-*` butuh
+≥2); 2 screen → set berisi 3 (`solo`, `split-right`, `split-left`); 3 screen → set berisi 4
+tanpa `scatter`; 6 screen → set berisi 4 dengan `scatter` di urutan pertama. Plus: `layout`
+eksplisit → set berisi tepat 1.
 
 **Test #5 — Halaman render benar-benar self-contained.**
 Bangun `render-*.html` dari fixture, lalu assert isinya **tidak mengandung** substring
