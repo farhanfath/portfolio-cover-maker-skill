@@ -1,0 +1,7 @@
+# artefak render (PNG hasil + halaman self-contained sementara)
+cover-output/
+render-*.html
+
+# OS
+.DS_Store
+Thumbs.db
