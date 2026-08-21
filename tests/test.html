@@ -223,3 +223,27 @@ Assert.eq(L.renderSet(mk(6)), ['scatter', 'split-right', 'split-left', 'centered
 Assert.eq(L.renderSet(mk(6, { layout: 'centered' })), ['centered'],
           'layout: explicit layout renders exactly one');
 </script>
+
+<script src="../assets/js/decor.js"></script>
+<script>
+var D = CoverMaker.decor;
+
+['brush', 'blob', 'dots', 'grid'].forEach(function (k) {
+  Assert.ok(typeof D.SHAPES[k] === 'string' && D.SHAPES[k].indexOf('<svg') === 0,
+            'decor: SHAPES.' + k + ' is inline svg markup');
+  Assert.ok(D.SHAPES[k].indexOf('currentColor') !== -1,
+            'decor: SHAPES.' + k + ' is recolourable via currentColor');
+  Assert.ok(D.SHAPES[k].indexOf('http') === -1,
+            'decor: SHAPES.' + k + ' has no external reference');
+});
+
+Assert.eq(D.forArchetype('split-right'), 'brush', 'decor: split-right maps to brush');
+Assert.eq(D.forArchetype('split-left'), 'brush', 'decor: split-left maps to brush');
+Assert.eq(D.forArchetype('centered'), 'dots', 'decor: centered maps to dots');
+Assert.eq(D.forArchetype('scatter'), 'blob', 'decor: scatter maps to blob');
+Assert.eq(D.forArchetype('solo'), 'blob', 'decor: solo maps to blob');
+
+Assert.eq(D.resolve('none', 'centered'), null, 'decor: none resolves to null');
+Assert.eq(D.resolve('grid', 'centered'), D.SHAPES.grid, 'decor: explicit choice wins over archetype');
+Assert.eq(D.resolve('auto', 'centered'), D.SHAPES.dots, 'decor: auto follows the archetype');
+</script>
