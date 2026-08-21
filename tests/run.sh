@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -u
 HERE="$(cd "$(dirname "$0")" && pwd)"
-BROWSER="$("$HERE/../scripts/find-browser.sh")" || { echo "FAIL :: no Chromium-based browser found"; exit 1; }
+BROWSER="$(bash "$HERE/../scripts/find-browser.sh")" || { echo "FAIL :: no Chromium-based browser found"; exit 1; }
 
 # On Git Bash/MSYS, $HERE is a POSIX-style path (e.g. /d/foo). A native Windows
 # Chrome binary can't resolve that in a file:// URL, so convert via cygpath
@@ -15,7 +15,7 @@ OUT="$("$BROWSER" --headless=new --disable-gpu --do-not-de-elevate --virtual-tim
        --dump-dom "$URL" 2>/dev/null)"
 
 echo "$OUT" | grep -oE '(PASS|FAIL|TOTAL) [^<]*' || true
-if ! echo "$OUT" | grep -qE 'TOTAL [0-9]+ FAILED [0-9]+'; then
+if ! echo "$OUT" | grep -qE 'TOTAL [1-9][0-9]* FAILED [0-9]+'; then
   echo "FAIL :: no test output captured :: browser=$BROWSER url=$URL"
   exit 1
 fi

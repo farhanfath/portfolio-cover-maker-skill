@@ -24,7 +24,7 @@ try {
 }
 
 [regex]::Matches($text, '(PASS|FAIL|TOTAL) [^<]*') | ForEach-Object { Write-Output $_.Value }
-if ($text -notmatch 'TOTAL \d+ FAILED \d+') {
+if ($text -notmatch 'TOTAL [1-9]\d* FAILED \d+') {
   Write-Output "FAIL :: no test output captured :: browser=$browser url=$url"
   exit 1
 }
