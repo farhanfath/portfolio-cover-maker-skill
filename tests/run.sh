@@ -20,4 +20,24 @@ if ! echo "$OUT" | grep -qE 'TOTAL [1-9][0-9]* FAILED [0-9]+'; then
   exit 1
 fi
 if echo "$OUT" | grep -q 'FAIL ::'; then echo "--- unit tests FAILED ---"; exit 1; fi
+
+# --- Test #5: halaman render benar-benar self-contained ---
+OUTDIR="$HERE/../cover-output-test"
+rm -rf "$OUTDIR"
+bash "$HERE/../scripts/render.sh" "$HERE/fixture/cover.json" >/dev/null || {
+  echo "FAIL :: render.sh exited non-zero"; exit 1; }
+
+SELF_OK=1
+for page in "$OUTDIR"/render-*.html; do
+  [ -f "$page" ] || { echo "FAIL :: no render-*.html produced"; SELF_OK=0; break; }
+  if grep -qE 'file://|http://|https://' "$page"; then
+    echo "FAIL :: $(basename "$page") contains an external URL"; SELF_OK=0
+  fi
+  if grep -oE '(src|href)="[^"]*"' "$page" | grep -qv '="data:'; then
+    echo "FAIL :: $(basename "$page") has a non-data: src/href"; SELF_OK=0
+  fi
+done
+[ "$SELF_OK" -eq 1 ] && echo "PASS :: render pages are fully self-contained"
+[ "$SELF_OK" -eq 1 ] || exit 1
+
 echo "--- unit tests passed ---"

@@ -1,5 +1,6 @@
 // Ekstraksi hue brand + penurunan palet OKLCH.
-// Klasik, bukan ES module: Chrome memblokir modul dari origin file://.
+// Klasik, bukan ES module: origin lokal (halaman dibuka langsung dari disk)
+// memblokir modul.
 (function (global) {
   var NS = global.CoverMaker = global.CoverMaker || {};
 

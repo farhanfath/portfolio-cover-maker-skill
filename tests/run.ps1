@@ -29,4 +29,24 @@ if ($text -notmatch 'TOTAL [1-9]\d* FAILED \d+') {
   exit 1
 }
 if ($text -match 'FAIL ::') { Write-Output "--- unit tests FAILED ---"; exit 1 }
+
+# --- Test #5: halaman render benar-benar self-contained ---
+$outDir = Join-Path $here '..\cover-output-test'
+if (Test-Path $outDir) { Remove-Item $outDir -Recurse -Force }
+& "$here\..\scripts\render.ps1" "$here\fixture\cover.json" | Out-Null
+
+$selfOk = $true
+$pages = Get-ChildItem (Join-Path $outDir 'render-*.html') -ErrorAction SilentlyContinue
+if (-not $pages) { Write-Output 'FAIL :: no render-*.html produced'; exit 1 }
+foreach ($p in $pages) {
+  $t = Get-Content $p.FullName -Raw
+  if ($t -match 'file://|http://|https://') {
+    Write-Output "FAIL :: $($p.Name) contains an external URL"; $selfOk = $false
+  }
+  $bad = [regex]::Matches($t, '(src|href)="([^"]*)"') |
+         Where-Object { $_.Groups[2].Value -notlike 'data:*' }
+  if ($bad) { Write-Output "FAIL :: $($p.Name) has a non-data: src/href"; $selfOk = $false }
+}
+if ($selfOk) { Write-Output 'PASS :: render pages are fully self-contained' } else { exit 1 }
+
 Write-Output "--- unit tests passed ---"
