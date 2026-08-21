@@ -157,17 +157,22 @@ html, body { margin: 0; padding: 0; background: #fff; }
 
 /* --- arketipe: scatter (HP miring tersebar, sebagian bleed keluar) ---
    Enam slot diposisikan agar tak ada yang terkubur total oleh yang lain:
-   hero besar di tengah, dua bleed dari tepi kiri/atas, dua bleed dari tepi
-   bawah, satu pengisi celah tengah-bawah. Overlap yang tersisa hanya
-   menyentuh sudut, tak pernah menutupi header (notch + judul layar). */
+   hero besar di tengah dan selalu paling depan (z-index tertinggi), lalu dua
+   pasang pendukung yang masing-masing dijauhkan dari jejak persegi milik
+   pendukung lain: kiri-atas (2) dan kiri-bawah (4) dipisah vertikal sampai
+   kotaknya sama sekali tidak beririsan; kanan-atas (3) dan kanan-bawah (5)
+   begitu juga. Satu-satunya irisan kotak yang tersisa adalah hero menimpa
+   sudut kartu (3) dan (6) - irisan itu berhenti sebelum menyentuh 30% atas
+   tiap kotak, yaitu pita header (notch + judul layar), jadi tak ada judul
+   yang tertutup. Bleed di tepi kiri/atas/bawah kanvas tetap disengaja. */
 .layout-scatter .stage { position: absolute; left: 0; top: 0; width: 980px; height: 900px; }
 .layout-scatter .stage .phone { transform-origin: center; }
 .layout-scatter .stage .phone:nth-child(1) { --pw: 300px; left: 470px; top: 130px; transform: rotate(3deg);  z-index: 6; }
-.layout-scatter .stage .phone:nth-child(2) { --pw: 240px; left: -40px; top: 20px;  transform: rotate(-7deg); z-index: 3; }
-.layout-scatter .stage .phone:nth-child(3) { --pw: 230px; left: 590px; top: 70px;  transform: rotate(4deg);  z-index: 3; }
-.layout-scatter .stage .phone:nth-child(4) { --pw: 230px; left: 40px;  top: 470px; transform: rotate(-5deg); z-index: 2; }
-.layout-scatter .stage .phone:nth-child(5) { --pw: 220px; left: 600px; top: 480px; transform: rotate(5deg);  z-index: 2; }
-.layout-scatter .stage .phone:nth-child(6) { --pw: 200px; left: 300px; top: 600px; transform: rotate(-3deg); z-index: 1; }
+.layout-scatter .stage .phone:nth-child(2) { --pw: 230px; left: -40px; top: 30px;  transform: rotate(-7deg); z-index: 4; }
+.layout-scatter .stage .phone:nth-child(3) { --pw: 210px; left: 650px; top: -20px; transform: rotate(6deg);  z-index: 3; }
+.layout-scatter .stage .phone:nth-child(4) { --pw: 210px; left: 10px;  top: 580px; transform: rotate(-5deg); z-index: 2; }
+.layout-scatter .stage .phone:nth-child(5) { --pw: 210px; left: 620px; top: 800px; transform: rotate(-4deg); z-index: 2; }
+.layout-scatter .stage .phone:nth-child(6) { --pw: 190px; left: 270px; top: 680px; transform: rotate(-3deg); z-index: 1; }
 .layout-scatter .stage .phone:nth-child(n+7) { display: none; }
 .layout-scatter .copy { right: 90px; top: 50%; transform: translateY(-50%); width: 560px; }
 .layout-scatter .decor { opacity: .20; }
