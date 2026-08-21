@@ -60,4 +60,25 @@ foreach ($p in $pages) {
 }
 if ($selfOk) { Write-Output 'PASS :: render pages are fully self-contained' } else { exit 1 }
 
+# --- Test #6: fixture render end-to-end ---
+$e2eOk = $true
+$pngs = @(Get-ChildItem (Join-Path $outDir '*.png') -ErrorAction SilentlyContinue)
+if ($pngs.Count -ne 4) { Write-Output "FAIL :: e2e expected 4 png, got $($pngs.Count)"; $e2eOk = $false }
+foreach ($p in $pngs) {
+  if ($p.Length -lt 81920) {
+    Write-Output "FAIL :: e2e $($p.Name) is only $($p.Length)B (<80KB), render likely blank"
+    $e2eOk = $false
+  }
+  $b = [IO.File]::ReadAllBytes($p.FullName)
+  # [byte] -shl in Windows PowerShell 5.1 returns a [byte], silently truncating
+  # any bits shifted past position 7 (e.g. 12 -shl 8 becomes 0, not 3072) - cast
+  # each byte to [int] first so the shift produces the real 32-bit value.
+  $w = ([int]$b[16] -shl 24) -bor ([int]$b[17] -shl 16) -bor ([int]$b[18] -shl 8) -bor [int]$b[19]
+  $h = ([int]$b[20] -shl 24) -bor ([int]$b[21] -shl 16) -bor ([int]$b[22] -shl 8) -bor [int]$b[23]
+  if ($w -ne 3200 -or $h -ne 1800) {
+    Write-Output "FAIL :: e2e $($p.Name) is ${w}x${h}, expected 3200x1800"; $e2eOk = $false
+  }
+}
+if ($e2eOk) { Write-Output 'PASS :: e2e render produced 4 valid 3200x1800 covers' } else { exit 1 }
+
 Write-Output "--- unit tests passed ---"

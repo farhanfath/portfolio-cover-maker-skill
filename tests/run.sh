@@ -48,4 +48,30 @@ done
 [ "$SELF_OK" -eq 1 ] && echo "PASS :: render pages are fully self-contained"
 [ "$SELF_OK" -eq 1 ] || exit 1
 
+# --- Test #6: fixture render end-to-end ---
+E2E_OK=1
+PNGS="$(ls "$OUTDIR"/*.png 2>/dev/null | wc -l | tr -d ' ')"
+if [ "$PNGS" -ne 4 ]; then
+  echo "FAIL :: e2e expected 4 png, got $PNGS"; E2E_OK=0
+fi
+
+for png in "$OUTDIR"/*.png; do
+  [ -f "$png" ] || continue
+  SIZE="$(wc -c < "$png" | tr -d ' ')"
+  if [ "$SIZE" -lt 81920 ]; then
+    echo "FAIL :: e2e $(basename "$png") is only ${SIZE}B (<80KB), render likely blank"; E2E_OK=0
+  fi
+  # Dimensi PNG: lebar = byte 17-20, tinggi = byte 21-24 (big-endian) di chunk IHDR.
+  DIMS="$(od -An -tu1 -j16 -N8 "$png" | awk '{
+    w = $1*16777216 + $2*65536 + $3*256 + $4;
+    h = $5*16777216 + $6*65536 + $7*256 + $8;
+    print w "x" h }')"
+  if [ "$DIMS" != "3200x1800" ]; then
+    echo "FAIL :: e2e $(basename "$png") is $DIMS, expected 3200x1800"; E2E_OK=0
+  fi
+done
+
+[ "$E2E_OK" -eq 1 ] && echo "PASS :: e2e render produced 4 valid 3200x1800 covers"
+[ "$E2E_OK" -eq 1 ] || exit 1
+
 echo "--- unit tests passed ---"
