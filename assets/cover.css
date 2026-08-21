@@ -113,6 +113,61 @@ html, body { margin: 0; padding: 0; background: #fff; }
 .layout-solo .stage .phone { --pw: 380px; position: relative; transform: rotate(-5deg); }
 /* solo hanya menampilkan satu HP (selalu hero, yang di-mount lebih dulu oleh
    render.js); screens pendukung tetap ada di DOM tapi disembunyikan supaya
-   tidak menumpuk dalam alur normal (position: relative di atas). */
-.layout-solo .stage .phone ~ .phone { display: none; }
+   tidak menumpuk dalam alur normal (position: relative di atas).
+   Semua arketipe memakai idiom :nth-child(n+N) yang sama untuk menyembunyikan
+   slot HP surplus - lihat catatan di bagian bawah file ini. */
+.layout-solo .stage .phone:nth-child(n+2) { display: none; }
 .layout-solo .decor { opacity: .14; }
+
+/* --- arketipe: split-right (mockup kiri, teks kanan) --- */
+.layout-split-right .stage { position: absolute; left: 40px; top: 0; width: 800px; height: 900px; }
+.layout-split-right .stage .phone:nth-child(1) { --pw: 340px; left: 200px; top: 96px;  z-index: 1; }
+.layout-split-right .stage .phone:nth-child(2) { --pw: 292px; left: 10px;  top: 300px; z-index: 3; }
+.layout-split-right .stage .phone:nth-child(3) { --pw: 292px; left: 430px; top: 360px; z-index: 2; }
+.layout-split-right .stage .phone:nth-child(n+4) { display: none; }
+.layout-split-right .copy { right: 100px; top: 50%; transform: translateY(-50%); width: 610px; }
+.layout-split-right .decor { opacity: .18; }
+
+/* --- arketipe: split-left (cermin) --- */
+.layout-split-left .stage { position: absolute; right: 40px; top: 0; width: 800px; height: 900px; }
+.layout-split-left .stage .phone:nth-child(1) { --pw: 340px; right: 200px; top: 96px;  z-index: 1; }
+.layout-split-left .stage .phone:nth-child(2) { --pw: 292px; right: 10px;  top: 300px; z-index: 3; }
+.layout-split-left .stage .phone:nth-child(3) { --pw: 292px; right: 430px; top: 360px; z-index: 2; }
+.layout-split-left .stage .phone:nth-child(n+4) { display: none; }
+.layout-split-left .copy { left: 100px; top: 50%; transform: translateY(-50%); width: 610px; }
+.layout-split-left .decor { opacity: .18; transform: scaleX(-1); }
+
+/* --- arketipe: centered (teks atas tengah, HP berjajar bleed bawah) --- */
+.layout-centered .copy {
+  left: 50%; top: 72px; transform: translateX(-50%);
+  width: 1100px; text-align: center;
+}
+.layout-centered .copy__logo { margin-left: auto; margin-right: auto; }
+.layout-centered .copy__name { letter-spacing: .06em; }
+.layout-centered .copy__rule { margin-left: auto; margin-right: auto; }
+.layout-centered .copy__tagline { margin-left: auto; margin-right: auto; max-width: 900px; }
+.layout-centered .copy__badges { justify-content: center; }
+
+.layout-centered .stage { position: absolute; left: 0; right: 0; top: 470px; height: 430px; }
+.layout-centered .stage .phone:nth-child(1) { --pw: 300px; left: 50%; margin-left: -150px; top: 0;   z-index: 3; }
+.layout-centered .stage .phone:nth-child(2) { --pw: 268px; left: 50%; margin-left: -520px; top: 60px; z-index: 2; }
+.layout-centered .stage .phone:nth-child(3) { --pw: 268px; left: 50%; margin-left: 252px;  top: 60px; z-index: 2; }
+.layout-centered .stage .phone:nth-child(n+4) { display: none; }
+.layout-centered .decor { opacity: .22; }
+
+/* --- arketipe: scatter (HP miring tersebar, sebagian bleed keluar) ---
+   Enam slot diposisikan agar tak ada yang terkubur total oleh yang lain:
+   hero besar di tengah, dua bleed dari tepi kiri/atas, dua bleed dari tepi
+   bawah, satu pengisi celah tengah-bawah. Overlap yang tersisa hanya
+   menyentuh sudut, tak pernah menutupi header (notch + judul layar). */
+.layout-scatter .stage { position: absolute; left: 0; top: 0; width: 980px; height: 900px; }
+.layout-scatter .stage .phone { transform-origin: center; }
+.layout-scatter .stage .phone:nth-child(1) { --pw: 300px; left: 470px; top: 130px; transform: rotate(3deg);  z-index: 6; }
+.layout-scatter .stage .phone:nth-child(2) { --pw: 240px; left: -40px; top: 20px;  transform: rotate(-7deg); z-index: 3; }
+.layout-scatter .stage .phone:nth-child(3) { --pw: 230px; left: 590px; top: 70px;  transform: rotate(4deg);  z-index: 3; }
+.layout-scatter .stage .phone:nth-child(4) { --pw: 230px; left: 40px;  top: 470px; transform: rotate(-5deg); z-index: 2; }
+.layout-scatter .stage .phone:nth-child(5) { --pw: 220px; left: 600px; top: 480px; transform: rotate(5deg);  z-index: 2; }
+.layout-scatter .stage .phone:nth-child(6) { --pw: 200px; left: 300px; top: 600px; transform: rotate(-3deg); z-index: 1; }
+.layout-scatter .stage .phone:nth-child(n+7) { display: none; }
+.layout-scatter .copy { right: 90px; top: 50%; transform: translateY(-50%); width: 560px; }
+.layout-scatter .decor { opacity: .20; }
