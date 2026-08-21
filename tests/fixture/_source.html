@@ -1,0 +1,24 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>fixture screen</title>
+<style>
+  html, body { margin: 0; background: #fff; }
+  body { width: 1080px; height: 2340px; font-family: system-ui, sans-serif; }
+  .bar { height: 90px; background: #0f6b52; }
+  .hero { height: 620px; background: #148a68; color: #fff; padding: 80px; box-sizing: border-box; }
+  .hero h1 { font-size: 96px; margin: 0 0 24px; }
+  .hero p { font-size: 46px; margin: 0; opacity: .9; }
+  .card { margin: 60px 80px; height: 300px; border-radius: 40px; background: #e8f5f0; }
+  .card.alt { background: #d3ece3; }
+  .fill { background: #148a68; }
+</style>
+<div class="bar"></div>
+<div class="hero"><h1 id="t">Home</h1><p>fixture screen for cover-maker tests</p></div>
+<div class="card"></div>
+<div class="card alt"></div>
+<div class="card"></div>
+<div class="card alt fill"></div>
+<script>
+  var s = new URLSearchParams(location.search).get('screen') || 'Home';
+  document.getElementById('t').textContent = s;
+</script>
