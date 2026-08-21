@@ -27,6 +27,35 @@ function Get-Mime($p) {
   }
 }
 
+# Cheap sanity check on the file's actual bytes, keyed off its extension.
+# Existence alone (spec §7.2: "tidak ada/tidak terbaca") does not catch a
+# text file with a .png extension (e.g. an un-pulled git-lfs pointer) - that
+# used to sail straight through and only surface, much later and much less
+# clearly, as a blank render or a hung headless Chrome. This names the
+# actual bad file up front instead.
+function Test-ImageMagic($bytes, $ext) {
+  switch ($ext) {
+    '.png' {
+      return ($bytes.Length -ge 8 -and $bytes[0] -eq 0x89 -and $bytes[1] -eq 0x50 -and
+              $bytes[2] -eq 0x4E -and $bytes[3] -eq 0x47 -and $bytes[4] -eq 0x0D -and
+              $bytes[5] -eq 0x0A -and $bytes[6] -eq 0x1A -and $bytes[7] -eq 0x0A)
+    }
+    { $_ -eq '.jpg' -or $_ -eq '.jpeg' } {
+      return ($bytes.Length -ge 2 -and $bytes[0] -eq 0xFF -and $bytes[1] -eq 0xD8)
+    }
+    '.webp' {
+      return ($bytes.Length -ge 12 -and $bytes[0] -eq 0x52 -and $bytes[1] -eq 0x49 -and
+              $bytes[2] -eq 0x46 -and $bytes[3] -eq 0x46 -and $bytes[8] -eq 0x57 -and
+              $bytes[9] -eq 0x45 -and $bytes[10] -eq 0x42 -and $bytes[11] -eq 0x50)
+    }
+    '.svg' {
+      $head = [Text.Encoding]::UTF8.GetString($bytes, 0, [Math]::Min(512, $bytes.Length))
+      return ($head -match '<svg' -or $head -match '<\?xml')
+    }
+    default { return $true }   # tipe tak dikenal: mime_of sudah default ke octet-stream, tidak ada acuan untuk dicek
+  }
+}
+
 # Diurutkan terpanjang-lebih-dulu: kalau satu nama file adalah substring dari
 # nama file lain (mis. "a.png" di dalam "xa.png"), mengganti yang pendek dulu
 # akan merusak substitusi yang panjang.
@@ -36,7 +65,13 @@ $srcs = [regex]::Matches($dataRaw, '"(?:src|logo)"\s*:\s*"([^"]+)"') |
 foreach ($rel in $srcs) {
   $abs = Join-Path $srcDir $rel
   if (-not (Test-Path $abs)) { Write-Output "error: image not found: $rel"; exit 1 }
-  $uri = 'data:' + (Get-Mime $abs) + ';base64,' + [Convert]::ToBase64String([IO.File]::ReadAllBytes($abs))
+  $bytes = [IO.File]::ReadAllBytes($abs)
+  $ext = [IO.Path]::GetExtension($abs).ToLower()
+  if (-not (Test-ImageMagic $bytes $ext)) {
+    Write-Output "error: image is not a valid $ext (bad file signature): $rel"
+    exit 1
+  }
+  $uri = 'data:' + (Get-Mime $abs) + ';base64,' + [Convert]::ToBase64String($bytes)
   $dataRaw = $dataRaw.Replace('"' + $rel + '"', '"' + $uri + '"')
 }
 
@@ -124,6 +159,7 @@ foreach ($layout in $layouts) {
   Write-Utf8NoBom $page $html
   Write-Output "html: $page"
   if (-not $browser) { continue }
+  $pngPath = Join-Path $outDir "$layout.png"
   # chrome.exe writes a "N bytes written to file ..." line to stderr on every
   # screenshot. With $ErrorActionPreference = 'Stop' in effect, PowerShell's
   # own `2>` redirection on a native command wraps each stderr line in a
@@ -132,22 +168,62 @@ foreach ($layout in $layouts) {
   # just staying quiet. Route both streams through Start-Process to the NUL
   # device instead, bypassing PowerShell's stream-wrapping entirely (bash's
   # equivalent call redirects both streams too, so this keeps parity).
+  #
+  # --dump-dom alongside --screenshot in the same invocation: cover.js
+  # (assets/js/render.js) sets data-ready="1" on <html> when it finishes, or
+  # data-ready="error" (plus data-error="...") when it catches its own
+  # failure. Without reading this back, a render that fails partway through
+  # (corrupt hero image, bad logo, timed-out virtual-time-budget) still
+  # produces a screenshot and gets reported as a success.
   $argStr = '--headless=new --disable-gpu --do-not-de-elevate --hide-scrollbars --force-device-scale-factor=1 ' +
             "--virtual-time-budget=8000 --window-size=`"$w,$h`" " +
-            '"--screenshot=' + (Join-Path $outDir "$layout.png") + '" ' +
+            '"--screenshot=' + $pngPath + '" --dump-dom ' +
             '"file:///' + ($page -replace '\\','/') + '"'
   # Start-Process refuses identical redirect targets for stdout/stderr, so
   # each gets its own throwaway temp file.
   $shotOutFile = [System.IO.Path]::GetTempFileName()
   $shotErrFile = [System.IO.Path]::GetTempFileName()
+  $domOut = ""
+  $procFailed = $false
   try {
     Start-Process -FilePath $browser -ArgumentList $argStr -NoNewWindow -Wait `
       -RedirectStandardOutput $shotOutFile -RedirectStandardError $shotErrFile -ErrorAction Stop
+    $domOut = Get-Content -Path $shotOutFile -Raw -ErrorAction SilentlyContinue
+    if (-not $domOut) { $domOut = "" }
+    $domOut = $domOut -replace "`r", ""
   } catch {
+    # Deferred finding folded in here: this used to be an empty catch block,
+    # so a Start-Process failure (e.g. the browser path stopped existing
+    # between find-browser.ps1 running and now) still fell through to the
+    # unconditional "png:" line below for a PNG that was never written.
+    $procFailed = $true
   } finally {
     Remove-Item $shotOutFile, $shotErrFile -ErrorAction SilentlyContinue
   }
-  Write-Output "png:  $(Join-Path $outDir "$layout.png")"
+  if ($procFailed) {
+    Write-Output "error: render for layout '$layout' failed to launch the browser"
+    Remove-Item $pngPath -ErrorAction SilentlyContinue
+    exit 1
+  }
+  # Same reasoning as the plan-detection cut above: the dumped DOM includes
+  # the raw <script> source, which contains the literal strings 'data-ready'
+  # and 'data-error' as JS string/attribute-name literals. Only trust the
+  # part of the dump before the first <script> tag.
+  $cut = $domOut.IndexOf('<script>')
+  $domHead = if ($cut -ge 0) { $domOut.Substring(0, $cut) } else { $domOut }
+  if ($domHead -match 'data-ready="error"') {
+    $errMsg = if ($domHead -match 'data-error="([^"]*)"') { $Matches[1] } else { 'unknown error' }
+    Write-Output "error: render for layout '$layout' failed in-page: $errMsg"
+    Remove-Item $pngPath -ErrorAction SilentlyContinue
+    exit 1
+  }
+  if ($domHead -notmatch 'data-ready="1"') {
+    Write-Output ("error: render for layout '$layout' did not finish (no data-ready=""1"" found; " +
+                   "the page may have exceeded --virtual-time-budget or the browser crashed)")
+    Remove-Item $pngPath -ErrorAction SilentlyContinue
+    exit 1
+  }
+  Write-Output "png:  $pngPath"
 }
 
 if (-not $browser) {

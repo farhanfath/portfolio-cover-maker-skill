@@ -81,6 +81,12 @@ html, body { margin: 0; padding: 0; background: #fff; }
   letter-spacing: -.02em;
   margin: 0;
   white-space: nowrap;
+  /* Filet keras di belakang fitWordmark's JS shrink loop (render.js): shrink
+     berhenti di 28px meski masih meluber. Ini menjamin nama tidak pernah
+     bocor ke luar kolomnya, terlepas dari apa yang JS lakukan. */
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
 }
 .copy__rule {
   height: 4px;

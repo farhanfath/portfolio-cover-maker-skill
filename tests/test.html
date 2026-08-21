@@ -12,9 +12,15 @@ Assert.eq(1 + 1, 2, 'harness: sanity');
 var P = CoverMaker.palette;
 
 // --- Test #1: invarian kontras di seluruh 360 hue ---
+// Disapu dengan langkah 0.5 derajat (bukan integer 0-359) supaya sapuan ini
+// benar-benar melewati ke-24 nilai yang bisa dihasilkan extractHue
+// (palette.js: best * 15 + 7.5, jadi selalu X.5, tak pernah bilangan bulat).
+// Sapuan integer sebelumnya tidak pernah menguji satupun nilai yang
+// sebenarnya dipakai produksi.
 (function () {
   var worstInk = Infinity, worstBase = Infinity, worstHueInk = -1, worstHueBase = -1;
-  for (var h = 0; h < 360; h++) {
+  for (var i = 0; i < 720; i++) {
+    var h = i * 0.5;
     var p = P.derive(h);
     var cInk  = P.contrast(p.ink,  p.surfaceB);
     var cBase = P.contrast(p.base, p.surfaceB);
@@ -246,4 +252,26 @@ Assert.eq(D.forArchetype('solo'), 'blob', 'decor: solo maps to blob');
 Assert.eq(D.resolve('none', 'centered'), null, 'decor: none resolves to null');
 Assert.eq(D.resolve('grid', 'centered'), D.SHAPES.grid, 'decor: explicit choice wins over archetype');
 Assert.eq(D.resolve('auto', 'centered'), D.SHAPES.dots, 'decor: auto follows the archetype');
+</script>
+
+<script src="../assets/js/render.js"></script>
+<script>
+// render.js auto-mounts only when window.COVER_DATA is set (see its bottom
+// guard), which it is not here, so loading it standalone is safe and just
+// exposes CoverMaker.render for these tests.
+var R = CoverMaker.render;
+
+// --- screen-quality warnings: pure function, no image loading needed ---
+Assert.eq(R.checkScreenQuality(1080, 2400), null,
+          'screen-quality: a normal portrait phone shot passes clean');
+Assert.eq(R.checkScreenQuality(400, 866), null,
+          'screen-quality: exactly 400px wide does not warn (boundary)');
+Assert.ok((R.checkScreenQuality(320, 693) || '').indexOf('320px wide') !== -1,
+          'screen-quality: <400px width warns about softness and names the width');
+Assert.ok((R.checkScreenQuality(1624, 750) || '').indexOf('landscape') !== -1,
+          'screen-quality: a landscape screenshot warns and says "landscape"');
+Assert.ok((R.checkScreenQuality(768, 1024) || '').indexOf('tablet-shaped') !== -1,
+          'screen-quality: a tablet-shaped portrait screenshot warns and says "tablet-shaped"');
+Assert.eq(R.checkScreenQuality(0, 0), 'screen is only 0px wide; it will look soft at scale 2',
+          'screen-quality: zero-size probe does not throw and reports as too narrow');
 </script>

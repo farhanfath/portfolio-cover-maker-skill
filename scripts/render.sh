@@ -32,6 +32,28 @@ mime_of() {
   esac
 }
 
+# Cheap sanity check on the file's actual bytes, keyed off its extension.
+# Existence alone (spec §7.2: "tidak ada/tidak terbaca") does not catch a
+# text file with a .png extension (e.g. an un-pulled git-lfs pointer) - that
+# used to sail straight through and only surface, much later and much less
+# clearly, as a blank render or a hung headless Chrome. This names the
+# actual bad file up front instead.
+# Returns success (0) when the bytes match what the extension promises.
+good_magic() {
+  f="$1"; ext="$2"
+  case "$ext" in
+    png)
+      [ "$(od -An -tx1 -N8 "$f" | tr -d ' \n')" = "89504e470d0a1a0a" ] ;;
+    jpg|jpeg)
+      [ "$(od -An -tx1 -N2 "$f" | tr -d ' \n')" = "ffd8" ] ;;
+    webp)
+      [ "$(head -c4 "$f")" = "RIFF" ] && [ "$(dd if="$f" bs=1 skip=8 count=4 2>/dev/null)" = "WEBP" ] ;;
+    svg)
+      head -c 512 "$f" | grep -qiE '<svg|<\?xml' ;;
+    *) return 0 ;;   # tipe tak dikenal: mime_of sudah default ke octet-stream, tidak ada acuan untuk dicek
+  esac
+}
+
 # Ubah tiap path gambar di cover.json menjadi data URI.
 # Dikerjakan dengan node-free text processing: baca JSON apa adanya, lalu
 # ganti setiap nilai "src" dengan data URI padanannya.
@@ -46,6 +68,11 @@ SRCS="$(printf '%s' "$DATA_JSON" | grep -oE '"(src|logo)"[[:space:]]*:[[:space:]
 for rel in $SRCS; do
   abs="$SRC_DIR/$rel"
   [ -f "$abs" ] || { echo "error: image not found: $rel (resolved to $abs)"; exit 1; }
+  ext_lc="$(printf '%s' "${rel##*.}" | tr 'A-Z' 'a-z')"
+  good_magic "$abs" "$ext_lc" || {
+    echo "error: image is not a valid .$ext_lc (bad file signature): $rel (resolved to $abs)"
+    exit 1
+  }
   uri="data:$(mime_of "$abs");base64,$(b64 "$abs")"
   # Substitusi literal lewat awk supaya karakter khusus di base64 aman.
   DATA_JSON="$(REL="$rel" URI="$uri" awk '
@@ -150,11 +177,35 @@ for layout in $LAYOUTS; do
 
   if [ -z "$BROWSER" ]; then continue; fi
 
-  "$BROWSER" --headless=new --disable-gpu --do-not-de-elevate --hide-scrollbars \
+  PNG="$OUT_DIR/$layout.png"
+  # --dump-dom alongside --screenshot in the same invocation: cover.js
+  # (assets/js/render.js) sets data-ready="1" on <html> when it finishes, or
+  # data-ready="error" (plus data-error="...") when it catches its own
+  # failure. Without reading this back, a render that fails partway through
+  # (corrupt hero image, bad logo, timed-out virtual-time-budget) still
+  # produces a screenshot and gets reported as a success.
+  DOM_OUT="$("$BROWSER" --headless=new --disable-gpu --do-not-de-elevate --hide-scrollbars \
     --force-device-scale-factor=1 --virtual-time-budget=8000 \
     --window-size="$WIDTH,$HEIGHT" \
-    --screenshot="$OUT_DIR/$layout.png" "$(file_url "$PAGE")" >/dev/null 2>&1
-  echo "png:  $OUT_DIR/$layout.png"
+    --screenshot="$PNG" --dump-dom "$(file_url "$PAGE")" 2>/dev/null)"
+  # Same reasoning as the plan-detection cut above: the dumped DOM includes
+  # the raw <script> source, which contains the literal strings
+  # 'data-ready' and 'data-error' as JS string/attribute-name literals. Only
+  # trust the part of the dump before the first <script> tag.
+  DOM_HEAD="${DOM_OUT%%<script>*}"
+  if printf '%s' "$DOM_HEAD" | grep -q 'data-ready="error"'; then
+    ERRMSG="$(printf '%s' "$DOM_HEAD" | grep -oE 'data-error="[^"]*"' | sed -E 's/data-error="(.*)"/\1/')"
+    echo "error: render for layout '$layout' failed in-page: ${ERRMSG:-unknown error}"
+    rm -f "$PNG"
+    exit 1
+  fi
+  if ! printf '%s' "$DOM_HEAD" | grep -q 'data-ready="1"'; then
+    echo "error: render for layout '$layout' did not finish (no data-ready=\"1\" found;" \
+         "the page may have exceeded --virtual-time-budget or the browser crashed)"
+    rm -f "$PNG"
+    exit 1
+  fi
+  echo "png:  $PNG"
 done
 
 if [ -z "$BROWSER" ]; then

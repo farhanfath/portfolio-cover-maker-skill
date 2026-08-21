@@ -40,6 +40,28 @@
     return n;
   }
 
+  // Kualitas screenshot murni dari dimensinya - fungsi pure supaya bisa
+  // di-unit-test langsung di test.html tanpa harus memuat gambar sungguhan.
+  // Mengembalikan pesan warning (string) atau null kalau tidak ada masalah.
+  var MIN_WIDTH = 400;
+  var TARGET_ASPECT = 9 / 19.5;         // rasio potret HP yang jadi acuan device frame (.phone di cover.css)
+  // Toleransi 1.4x target sebelum dianggap "bukan potret HP wajar": cukup
+  // longgar untuk memaafkan HP pendek-gemuk yang wajar (mis. rasio lawas
+  // 9:16 = .5625), tapi menangkap tablet potret (mis. iPad ~3:4 = .75) dan
+  // segala sesuatu yang landscape (rasio >1).
+  var TABLET_ASPECT_MAX = TARGET_ASPECT * 1.4;
+  function checkScreenQuality(width, height) {
+    if (width < MIN_WIDTH) {
+      return 'screen is only ' + width + 'px wide; it will look soft at scale 2';
+    }
+    if (height > 0 && (width / height) > TABLET_ASPECT_MAX) {
+      var shape = width > height ? 'landscape' : 'tablet-shaped';
+      return 'screen is ' + shape + ' (' + width + 'x' + height +
+             '); it will be cropped from the top to fit the phone frame';
+    }
+    return null;
+  }
+
   function loadImage(src) {
     return new Promise(function (resolve, reject) {
       var img = new Image();
@@ -84,62 +106,72 @@
     return phone;
   }
 
+  // Tandai render sebagai gagal dengan cara yang bisa dibaca dari luar
+  // halaman (lihat scripts/render.sh dan render.ps1: keduanya melakukan
+  // --dump-dom setelah screenshot dan mencari atribut ini). Tanpa ini, sebuah
+  // render yang gagal di tengah jalan (mis. hero screenshot rusak) tetap
+  // menghasilkan screenshot kosong yang dilaporkan sebagai sukses.
+  function markFailed(err) {
+    var msg = String((err && err.message) || err);
+    console.error('CoverMaker: render failed: ' + msg);
+    document.documentElement.setAttribute('data-ready', 'error');
+    document.documentElement.setAttribute('data-error', msg);
+  }
+
   function mount() {
-    var raw = global.COVER_DATA;
-    var layout = global.COVER_LAYOUT;
-    document.documentElement.style.setProperty('--scale', global.COVER_SCALE || 2);
+    // Seluruh badan mount() dibungkus dalam promise executor: kalau ada yang
+    // throw secara sinkron (mis. validate() menolak input), Promise
+    // constructor menangkapnya sendiri dan mengubahnya jadi rejection - jadi
+    // satu .catch() di ujung menangkap baik kegagalan sinkron maupun async.
+    return new Promise(function (resolve, reject) {
+      var raw = global.COVER_DATA;
+      var layout = global.COVER_LAYOUT;
+      document.documentElement.style.setProperty('--scale', global.COVER_SCALE || 2);
 
-    var v = NS.validate.validate(raw);
-    var data = v.data;
+      var v = NS.validate.validate(raw);
+      var data = v.data;
 
-    var stageRoot = document.getElementById('stage');
-    var canvas = el('div', 'canvas layout-' + layout, stageRoot);
+      var stageRoot = document.getElementById('stage');
+      var canvas = el('div', 'canvas layout-' + layout, stageRoot);
 
-    var order = data.screens.slice().sort(function (a, b) {
-      return (a.role === 'hero' ? -1 : 0) - (b.role === 'hero' ? -1 : 0);
-    });
-
-    return loadImage(order[0].src).then(function (heroImg) {
-      // Peringatan resolusi rendah: screenshot <400px lebar akan terlihat
-      // lembek pada skala render 2x/3x. Probe async, terpisah dari alur
-      // mount() utama supaya tidak menunda render.
-      order.forEach(function (s, i) {
-        var probe = new Image();
-        probe.onload = function () {
-          if (probe.naturalWidth < 400) {
-            console.log('WARN screens[' + i + '] is only ' + probe.naturalWidth +
-                        'px wide; it will look soft at scale 2');
-          }
-        };
-        probe.src = s.src;
+      var order = data.screens.slice().sort(function (a, b) {
+        return (a.role === 'hero' ? -1 : 0) - (b.role === 'hero' ? -1 : 0);
       });
 
-      var pal = resolvePalette(data, heroImg);
-      for (var k in pal.css) canvas.style.setProperty(k, pal.css[k]);
-      if (pal.fallback) console.log('WARN palette fell back to hue 215 (no dominant brand hue)');
-
-      // dekorasi
-      var svg = NS.decor.resolve(data.decor, layout);
-      if (svg) el('div', 'decor', canvas).innerHTML = svg;
-
-      // panggung mockup
-      var stage = el('div', 'stage', canvas);
-      order.forEach(function (s) { buildPhone(stage, s.src); });
-
-      // blok teks
-      var copy = el('div', 'copy', canvas);
-      var logoStep = Promise.resolve();
-      if (data.project.logo) {
-        logoStep = loadImage(data.project.logo).then(function (logoImg) {
-          var wrap = el('div', null, copy);
-          wrap.className = 'copy__logo' + (isLightBackedLogo(logoImg) ? ' copy__logo--boxed' : '');
-          wrap.appendChild(logoImg);
-          logoImg.style.maxHeight = '96px';
-          logoImg.style.display = 'block';
+      resolve(loadImage(order[0].src).then(function (heroImg) {
+        // Peringatan kualitas layar (resolusi rendah / landscape / tablet):
+        // probe async, terpisah dari alur mount() utama supaya tidak
+        // menunda render - kegagalan di sini tidak boleh menggagalkan
+        // seluruh cover, jadi bukan bagian dari promise chain utama.
+        order.forEach(function (s, i) {
+          var probe = new Image();
+          probe.onload = function () {
+            var warn = checkScreenQuality(probe.naturalWidth, probe.naturalHeight);
+            if (warn) console.log('WARN screens[' + i + '] ' + warn);
+          };
+          probe.src = s.src;
         });
-      }
 
-      return logoStep.then(function () {
+        var pal = resolvePalette(data, heroImg);
+        for (var k in pal.css) canvas.style.setProperty(k, pal.css[k]);
+        if (pal.fallback) console.log('WARN palette fell back to hue 215 (no dominant brand hue)');
+
+        // dekorasi
+        var svg = NS.decor.resolve(data.decor, layout);
+        if (svg) el('div', 'decor', canvas).innerHTML = svg;
+
+        // panggung mockup
+        var stage = el('div', 'stage', canvas);
+        order.forEach(function (s) { buildPhone(stage, s.src); });
+
+        // blok teks. Slot logo dibuat lebih dulu (kalau ada) supaya urutan
+        // DOM-nya benar (logo di atas nama) meski gambarnya dimuat async;
+        // sisa blok teks (nama, tagline, badge, meta) dibangun sinkron
+        // sehingga logo yang gagal dimuat tidak lagi menjatuhkan semuanya -
+        // hanya slot logonya sendiri yang dibuang.
+        var copy = el('div', 'copy', canvas);
+        var logoSlot = data.project.logo ? el('div', null, copy) : null;
+
         var name = el('h1', 'copy__name', copy);
         name.textContent = data.project.name;
         el('div', 'copy__rule', copy);
@@ -157,11 +189,35 @@
         if (data.meta) el('div', 'copy__meta', copy).textContent = data.meta;
 
         fitWordmark(name, 150, copy.clientWidth);
-        document.documentElement.setAttribute('data-ready', '1');
-      });
-    });
+
+        var logoStep = Promise.resolve();
+        if (logoSlot) {
+          logoStep = loadImage(data.project.logo).then(function (logoImg) {
+            logoSlot.className = 'copy__logo' + (isLightBackedLogo(logoImg) ? ' copy__logo--boxed' : '');
+            logoSlot.appendChild(logoImg);
+            logoImg.style.maxHeight = '96px';
+            logoImg.style.display = 'block';
+          }).catch(function (e) {
+            logoSlot.parentNode.removeChild(logoSlot);
+            console.log('WARN project.logo failed to load: ' + ((e && e.message) || e));
+          });
+        }
+
+        return logoStep.then(function () {
+          document.documentElement.setAttribute('data-ready', '1');
+        });
+      }));
+    }).catch(markFailed);
   }
 
-  NS.render = { fitWordmark: fitWordmark, isLightBackedLogo: isLightBackedLogo, mount: mount };
-  mount();
+  NS.render = {
+    fitWordmark: fitWordmark,
+    isLightBackedLogo: isLightBackedLogo,
+    checkScreenQuality: checkScreenQuality,
+    mount: mount
+  };
+  // Berjaga-jaga terhadap pemuatan render.js di luar template.html (mis.
+  // tests/test.html memuatnya untuk mengakses checkScreenQuality secara
+  // langsung): hanya auto-mount kalau COVER_DATA memang sudah disiapkan.
+  if (global.COVER_DATA) mount();
 })(window);

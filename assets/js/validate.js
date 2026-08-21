@@ -15,7 +15,8 @@
     if (!p || typeof p !== 'object') fail('cover.json: "project" is required');
     if (typeof p.name !== 'string' || p.name.length < 1) fail('cover.json: "project.name" is required');
     if (p.name.length > 16) {
-      warnings.push('project.name is ' + p.name.length + ' chars (>16); wordmark will shrink');
+      warnings.push('project.name is ' + p.name.length + ' chars (>16); wordmark will shrink ' +
+        'to fit and may still be clipped with an ellipsis if it does not');
     }
     if (typeof p.tagline !== 'string' || p.tagline.length < 1) fail('cover.json: "project.tagline" is required');
     if (p.tagline.length > 64) {
