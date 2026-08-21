@@ -46,6 +46,17 @@ foreach ($p in $pages) {
   $bad = [regex]::Matches($t, '(src|href)="([^"]*)"') |
          Where-Object { $_.Groups[2].Value -notlike 'data:*' }
   if ($bad) { Write-Output "FAIL :: $($p.Name) has a non-data: src/href"; $selfOk = $false }
+  # A CSS url(...) is neither an attribute nor necessarily schemed (a relative
+  # path like url(decor/brush.svg) has no http/https/file to catch above), so
+  # it needs its own check: only url(data:...) (embedded) and url(#...)
+  # (an internal SVG fragment reference, e.g. the decor pattern fills) may
+  # appear; anything else fetches something external.
+  $goodUrl = '^url\([''"]?(data:|#)'
+  $badUrls = [regex]::Matches($t, 'url\([^)]*\)') |
+             Where-Object { $_.Value -notmatch $goodUrl }
+  if ($badUrls) {
+    Write-Output "FAIL :: $($p.Name) has a url(...) that is not url(data: or url(#"; $selfOk = $false
+  }
 }
 if ($selfOk) { Write-Output 'PASS :: render pages are fully self-contained' } else { exit 1 }
 

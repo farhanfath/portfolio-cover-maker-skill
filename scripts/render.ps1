@@ -124,10 +124,29 @@ foreach ($layout in $layouts) {
   Write-Utf8NoBom $page $html
   Write-Output "html: $page"
   if (-not $browser) { continue }
-  & $browser --headless=new --disable-gpu --do-not-de-elevate --hide-scrollbars --force-device-scale-factor=1 `
-    --virtual-time-budget=8000 --window-size="$w,$h" `
-    "--screenshot=$(Join-Path $outDir "$layout.png")" `
-    "file:///$(($page -replace '\\','/'))" | Out-Null
+  # chrome.exe writes a "N bytes written to file ..." line to stderr on every
+  # screenshot. With $ErrorActionPreference = 'Stop' in effect, PowerShell's
+  # own `2>` redirection on a native command wraps each stderr line in a
+  # terminating NativeCommandError (same class of issue tests/run.ps1 already
+  # documents for stdout capture) - it would abort the whole render instead of
+  # just staying quiet. Route both streams through Start-Process to the NUL
+  # device instead, bypassing PowerShell's stream-wrapping entirely (bash's
+  # equivalent call redirects both streams too, so this keeps parity).
+  $argStr = '--headless=new --disable-gpu --do-not-de-elevate --hide-scrollbars --force-device-scale-factor=1 ' +
+            "--virtual-time-budget=8000 --window-size=`"$w,$h`" " +
+            '"--screenshot=' + (Join-Path $outDir "$layout.png") + '" ' +
+            '"file:///' + ($page -replace '\\','/') + '"'
+  # Start-Process refuses identical redirect targets for stdout/stderr, so
+  # each gets its own throwaway temp file.
+  $shotOutFile = [System.IO.Path]::GetTempFileName()
+  $shotErrFile = [System.IO.Path]::GetTempFileName()
+  try {
+    Start-Process -FilePath $browser -ArgumentList $argStr -NoNewWindow -Wait `
+      -RedirectStandardOutput $shotOutFile -RedirectStandardError $shotErrFile -ErrorAction Stop
+  } catch {
+  } finally {
+    Remove-Item $shotOutFile, $shotErrFile -ErrorAction SilentlyContinue
+  }
   Write-Output "png:  $(Join-Path $outDir "$layout.png")"
 }
 

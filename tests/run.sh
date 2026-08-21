@@ -36,6 +36,14 @@ for page in "$OUTDIR"/render-*.html; do
   if grep -oE '(src|href)="[^"]*"' "$page" | grep -qv '="data:'; then
     echo "FAIL :: $(basename "$page") has a non-data: src/href"; SELF_OK=0
   fi
+  # A CSS url(...) is neither an attribute nor necessarily schemed (a relative
+  # path like url(decor/brush.svg) has no http/https/file to catch above), so
+  # it needs its own check: only url(data:...) (embedded) and url(#...)
+  # (an internal SVG fragment reference, e.g. the decor pattern fills) may
+  # appear; anything else fetches something external.
+  if grep -oE "url\([^)]*\)" "$page" | grep -qvE "^url\(['\"]?(data:|#)"; then
+    echo "FAIL :: $(basename "$page") has a url(...) that is not url(data: or url(#"; SELF_OK=0
+  fi
 done
 [ "$SELF_OK" -eq 1 ] && echo "PASS :: render pages are fully self-contained"
 [ "$SELF_OK" -eq 1 ] || exit 1
