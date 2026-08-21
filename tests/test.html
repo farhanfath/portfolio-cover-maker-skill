@@ -6,3 +6,69 @@
 <script>
 Assert.eq(1 + 1, 2, 'harness: sanity');
 </script>
+<script src="../assets/js/palette.js"></script>
+<canvas id="probe" width="100" height="200" style="display:none"></canvas>
+<script>
+var P = CoverMaker.palette;
+
+// --- Test #1: invarian kontras di seluruh 360 hue ---
+(function () {
+  var worstInk = Infinity, worstBase = Infinity, worstHueInk = -1, worstHueBase = -1;
+  for (var h = 0; h < 360; h++) {
+    var p = P.derive(h);
+    var cInk  = P.contrast(p.ink,  p.surfaceB);
+    var cBase = P.contrast(p.base, p.surfaceB);
+    if (cInk  < worstInk)  { worstInk  = cInk;  worstHueInk  = h; }
+    if (cBase < worstBase) { worstBase = cBase; worstHueBase = h; }
+  }
+  Assert.ok(worstInk  >= 4.5, 'palette: ink on surface-b >= 4.5:1 for all hues (worst '
+            + worstInk.toFixed(2) + ' at H=' + worstHueInk + ')');
+  Assert.ok(worstBase >= 4.5, 'palette: base on surface-b >= 4.5:1 for all hues (worst '
+            + worstBase.toFixed(2) + ' at H=' + worstHueBase + ')');
+})();
+
+// --- Test #2: ekstraksi hue ---
+function makeImageData(spec) {
+  // spec: array of {frac, rgb}
+  var c = document.getElementById('probe');
+  var ctx = c.getContext('2d');
+  var total = c.width * c.height;
+  var img = ctx.createImageData(c.width, c.height);
+  var i = 0;
+  spec.forEach(function (s) {
+    var n = Math.round(total * s.frac);
+    for (var k = 0; k < n && i < total; k++, i++) {
+      img.data[i * 4] = s.rgb[0]; img.data[i * 4 + 1] = s.rgb[1];
+      img.data[i * 4 + 2] = s.rgb[2]; img.data[i * 4 + 3] = 255;
+    }
+  });
+  for (; i < total; i++) { img.data[i * 4 + 3] = 255; } // sisa: hitam
+  return img;
+}
+
+(function () {
+  // 60% putih (chrome UI) + 25% teal H=160 + 15% hitam (teks) -> harus ketemu ~160
+  var teal = P.oklchToLinearRgb(0.55, 0.13, 160).map(function (v) {
+    v = Math.max(0, Math.min(1, v));
+    return Math.round(255 * (v <= 0.0031308 ? 12.92 * v : 1.055 * Math.pow(v, 1 / 2.4) - 0.055));
+  });
+  var got = P.extractHue(makeImageData([
+    { frac: 0.60, rgb: [255, 255, 255] },
+    { frac: 0.25, rgb: teal },
+    { frac: 0.15, rgb: [0, 0, 0] }
+  ]));
+  Assert.ok(!got.fallback, 'palette: brand hue detected, not fallback');
+  Assert.close(got.hue, 160, 15, 'palette: extracted hue within 15deg of 160');
+})();
+
+(function () {
+  // grayscale penuh -> fallback 215
+  var got = P.extractHue(makeImageData([
+    { frac: 0.5, rgb: [255, 255, 255] },
+    { frac: 0.3, rgb: [128, 128, 128] },
+    { frac: 0.2, rgb: [20, 20, 20] }
+  ]));
+  Assert.ok(got.fallback, 'palette: grayscale image reports fallback');
+  Assert.eq(got.hue, 215, 'palette: grayscale fallback hue is 215');
+})();
+</script>
