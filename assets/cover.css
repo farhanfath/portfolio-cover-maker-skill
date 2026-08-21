@@ -1,0 +1,118 @@
+/* Kanvas logis 1600x900. zoom menaikkan seluruhnya ke skala render. */
+html { zoom: var(--scale, 2); }
+html, body { margin: 0; padding: 0; background: #fff; }
+
+.canvas {
+  position: relative;
+  width: 1600px;
+  height: 900px;
+  overflow: hidden;
+  background: linear-gradient(135deg, var(--surface-a) 0%, var(--surface-b) 100%);
+  font-family: Inter, system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* --- lapisan dekorasi --- */
+.decor {
+  position: absolute;
+  inset: 0;
+  color: var(--accent);
+  opacity: .16;
+  pointer-events: none;
+}
+.decor svg { width: 100%; height: 100%; display: block; }
+
+/* --- device frame --- */
+.phone {
+  --pw: 300px;
+  position: absolute;
+  width: var(--pw);
+  aspect-ratio: 9 / 19.5;
+  padding: calc(var(--pw) * .011);
+  border-radius: calc(var(--pw) * .049);   /* 0.038 radius layar + 0.011 bezel */
+  background: #111318;
+  box-sizing: border-box;
+  box-shadow:
+    0 calc(var(--pw) * .09) calc(var(--pw) * .19) rgba(14, 22, 30, .18),
+    0 calc(var(--pw) * .02) calc(var(--pw) * .05) rgba(14, 22, 30, .22);
+}
+.phone::after {                            /* notch */
+  content: '';
+  position: absolute;
+  top: calc(var(--pw) * .022);
+  left: 50%;
+  transform: translateX(-50%);
+  width: calc(var(--pw) * .30);
+  height: calc(var(--pw) * .055);
+  border-radius: 999px;
+  background: #111318;
+  z-index: 2;
+}
+.phone__screen {
+  width: 100%;
+  height: 100%;
+  border-radius: calc(var(--pw) * .038);
+  overflow: hidden;
+  background: #fff;
+}
+.phone__screen img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: top;   /* rasio meleset dipotong dari bawah, tidak digepengkan */
+  display: block;
+}
+
+/* --- blok teks --- */
+.copy { position: absolute; }
+.copy__logo { display: block; max-height: 96px; max-width: 300px; margin-bottom: 28px; }
+.copy__logo--boxed {
+  background: #fff;
+  border-radius: 24px;
+  padding: 14px 18px;
+  box-shadow: 0 8px 22px rgba(14, 22, 30, .10);
+  box-sizing: content-box;
+}
+.copy__name {
+  font-family: Outfit, system-ui, sans-serif;
+  font-weight: 700;
+  color: var(--base);
+  line-height: .98;
+  letter-spacing: -.02em;
+  margin: 0;
+  white-space: nowrap;
+}
+.copy__rule {
+  height: 4px;
+  width: 190px;
+  background: var(--accent);
+  border-radius: 999px;
+  margin: 26px 0 24px;
+}
+.copy__tagline {
+  font-size: 34px;
+  line-height: 1.35;
+  color: var(--ink);
+  margin: 0;
+  max-width: 620px;
+}
+.copy__badges { display: flex; align-items: center; gap: 22px; margin-top: 44px; }
+.copy__badges img { max-height: 68px; max-width: 190px; object-fit: contain; }
+.copy__meta {
+  font-family: Outfit, system-ui, sans-serif;
+  font-weight: 600;
+  font-size: 30px;
+  letter-spacing: .04em;
+  color: var(--accent);
+  margin-top: 26px;
+}
+
+/* --- arketipe: solo --- */
+.layout-solo .copy { left: 110px; top: 50%; transform: translateY(-50%); width: 640px; }
+.layout-solo .stage { position: absolute; right: 130px; top: 50%; transform: translateY(-50%); }
+.layout-solo .stage .phone { --pw: 380px; position: relative; transform: rotate(-5deg); }
+/* solo hanya menampilkan satu HP (selalu hero, yang di-mount lebih dulu oleh
+   render.js); screens pendukung tetap ada di DOM tapi disembunyikan supaya
+   tidak menumpuk dalam alur normal (position: relative di atas). */
+.layout-solo .stage .phone ~ .phone { display: none; }
+.layout-solo .decor { opacity: .14; }
