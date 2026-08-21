@@ -72,3 +72,94 @@ function makeImageData(spec) {
   Assert.eq(got.hue, 215, 'palette: grayscale fallback hue is 215');
 })();
 </script>
+
+<script src="../assets/js/validate.js"></script>
+<script>
+var V = CoverMaker.validate.validate;
+
+function good() {
+  return {
+    project: { name: 'TripMate', tagline: 'Your smart travel assistant' },
+    screens: [
+      { src: 'a.png', role: 'hero' },
+      { src: 'b.png', role: 'support' },
+      { src: 'c.png', role: 'support' }
+    ]
+  };
+}
+
+Assert.ok(V(good()).warnings.length === 0, 'validate: valid input has no warnings');
+
+// Default terisi
+(function () {
+  var r = V(good());
+  Assert.eq(r.data.layout, 'auto', 'validate: layout defaults to auto');
+  Assert.eq(r.data.palette.mode, 'auto', 'validate: palette.mode defaults to auto');
+  Assert.eq(r.data.decor, 'auto', 'validate: decor defaults to auto');
+  Assert.eq(r.data.output.dir, 'cover-output', 'validate: output.dir default');
+  Assert.eq(r.data.output.scale, 2, 'validate: output.scale default');
+  Assert.eq(r.data.badges, [], 'validate: badges defaults to empty');
+})();
+
+// name >16 -> warning, bukan tolak
+(function () {
+  var d = good(); d.project.name = 'SuperLongProjectName';
+  var r = V(d);
+  Assert.ok(r.warnings.join(' ').indexOf('name') !== -1, 'validate: long name warns about name');
+  Assert.eq(r.data.project.name, 'SuperLongProjectName', 'validate: long name is kept as-is');
+})();
+
+// tagline >64 -> tolak
+(function () {
+  var d = good(); d.project.tagline = 'x'.repeat(65);
+  Assert.throws(function () { V(d); }, 'tagline', 'validate: tagline over 64 is rejected');
+})();
+
+// screens kosong / >6 -> tolak
+Assert.throws(function () { var d = good(); d.screens = []; V(d); },
+              'screens', 'validate: empty screens rejected');
+Assert.throws(function () {
+  var d = good();
+  d.screens = [{ src: 'a.png', role: 'hero' }];
+  for (var i = 0; i < 6; i++) d.screens.push({ src: i + '.png', role: 'support' });
+  V(d);
+}, 'screens', 'validate: more than 6 screens rejected');
+
+// hero bukan tepat satu -> tolak, sebut jumlahnya
+Assert.throws(function () {
+  var d = good(); d.screens[1].role = 'hero'; V(d);
+}, '2', 'validate: two heroes rejected and count reported');
+Assert.throws(function () {
+  var d = good(); d.screens[0].role = 'support'; V(d);
+}, '0', 'validate: zero heroes rejected and count reported');
+
+// src kosong -> tolak, sebut indeksnya
+Assert.throws(function () { var d = good(); d.screens[1].src = ''; V(d); },
+              'screens[1]', 'validate: missing src names the offending index');
+
+// badges >4 -> dipotong + warning
+(function () {
+  var d = good();
+  d.badges = [1,2,3,4,5].map(function (i) { return { src: i + '.png', label: 'b' + i }; });
+  var r = V(d);
+  Assert.eq(r.data.badges.length, 4, 'validate: badges truncated to 4');
+  Assert.ok(r.warnings.join(' ').indexOf('badges') !== -1, 'validate: badge truncation warns');
+})();
+
+// meta >12 -> dipotong + warning
+(function () {
+  var d = good(); d.meta = 'ABCDEFGHIJKLMNOP';
+  var r = V(d);
+  Assert.eq(r.data.meta.length, 12, 'validate: meta truncated to 12');
+  Assert.ok(r.warnings.join(' ').indexOf('meta') !== -1, 'validate: meta truncation warns');
+})();
+
+// palette manual tanpa warna lengkap -> tolak, sebut field yang kurang
+Assert.throws(function () {
+  var d = good(); d.palette = { mode: 'manual', base: '#123456' }; V(d);
+}, 'accent', 'validate: incomplete manual palette names the missing field');
+
+// layout tidak dikenal -> tolak
+Assert.throws(function () { var d = good(); d.layout = 'diagonal'; V(d); },
+              'layout', 'validate: unknown layout rejected');
+</script>
