@@ -3,14 +3,16 @@
 
   var ELIGIBILITY = {
     'solo': 1,
+    'duo': 2,
     'split-right': 2,
     'split-left': 2,
     'centered': 3,
+    'diagonal': 3,
     'scatter': 5
   };
 
   // Urutan pengisian render set setelah pilihan auto.
-  var PRIORITY = ['split-right', 'split-left', 'centered', 'scatter', 'solo'];
+  var PRIORITY = ['split-right', 'split-left', 'diagonal', 'centered', 'scatter', 'duo', 'solo'];
 
   var MAX_SET = 4;
 
@@ -18,11 +20,14 @@
     return PRIORITY.filter(function (a) { return n >= ELIGIBILITY[a]; });
   }
 
+  // 'diagonal' sengaja tidak punya cabang di sini: ia arketipe pilihan, bukan
+  // default - masuk ke render set lewat PRIORITY supaya user tetap melihatnya.
   function autoLayout(data) {
     var n = data.screens.length;
     var name = data.project.name || '';
     var tagline = data.project.tagline || '';
-    if (n < 3) return 'solo';
+    if (n < 2) return 'solo';
+    if (n === 2) return 'duo';
     if (n >= 5) return 'scatter';
     if (data.project.logo && name.length <= 10) return 'centered';
     if (name.length > 10 || tagline.length > 45) return 'split-left';

@@ -166,8 +166,14 @@ Assert.throws(function () {
 }, 'accent', 'validate: incomplete manual palette names the missing field');
 
 // layout tidak dikenal -> tolak
-Assert.throws(function () { var d = good(); d.layout = 'diagonal'; V(d); },
+Assert.throws(function () { var d = good(); d.layout = 'isometric'; V(d); },
               'layout', 'validate: unknown layout rejected');
+
+// arketipe yang ditambahkan belakangan tetap lolos validator
+['duo', 'diagonal'].forEach(function (l) {
+  var d = good(); d.layout = l;
+  Assert.eq(V(d).data.layout, l, 'validate: layout "' + l + '" is accepted');
+});
 </script>
 
 <script src="../assets/js/layout.js"></script>
@@ -190,14 +196,19 @@ function mk(n, opts) {
 }
 
 Assert.eq(L.eligible(1), ['solo'], 'layout: 1 screen only allows solo');
-Assert.eq(L.eligible(2), ['split-right', 'split-left', 'solo'], 'layout: 2 screens allow three archetypes');
-Assert.eq(L.eligible(3), ['split-right', 'split-left', 'centered', 'solo'], 'layout: 3 screens exclude scatter');
-Assert.eq(L.eligible(4), ['split-right', 'split-left', 'centered', 'solo'], 'layout: 4 screens still exclude scatter');
-Assert.eq(L.eligible(5), ['split-right', 'split-left', 'centered', 'scatter', 'solo'], 'layout: 5 screens allow all');
-Assert.eq(L.eligible(6), ['split-right', 'split-left', 'centered', 'scatter', 'solo'], 'layout: 6 screens allow all (same set as 5)');
+Assert.eq(L.eligible(2), ['split-right', 'split-left', 'duo', 'solo'],
+          'layout: 2 screens allow four archetypes');
+Assert.eq(L.eligible(3), ['split-right', 'split-left', 'diagonal', 'centered', 'duo', 'solo'],
+          'layout: 3 screens exclude scatter');
+Assert.eq(L.eligible(4), ['split-right', 'split-left', 'diagonal', 'centered', 'duo', 'solo'],
+          'layout: 4 screens still exclude scatter');
+Assert.eq(L.eligible(5), ['split-right', 'split-left', 'diagonal', 'centered', 'scatter', 'duo', 'solo'],
+          'layout: 5 screens allow all');
+Assert.eq(L.eligible(6), ['split-right', 'split-left', 'diagonal', 'centered', 'scatter', 'duo', 'solo'],
+          'layout: 6 screens allow all (same set as 5)');
 
 Assert.eq(L.autoLayout(mk(1)), 'solo', 'layout: auto picks solo for 1 screen');
-Assert.eq(L.autoLayout(mk(2)), 'solo', 'layout: auto picks solo for 2 screens');
+Assert.eq(L.autoLayout(mk(2)), 'duo', 'layout: auto picks duo for exactly 2 screens');
 Assert.eq(L.autoLayout(mk(4)), 'split-right', 'layout: auto picks split-right for 4 screens with short name/tagline');
 Assert.eq(L.autoLayout(mk(5)), 'scatter', 'layout: auto picks scatter for 5 screens (boundary of >=5 rule)');
 Assert.eq(L.autoLayout(mk(6)), 'scatter', 'layout: auto picks scatter for 6 screens');
@@ -214,20 +225,29 @@ Assert.eq(L.autoLayout(mk(3, { tagline: 'x'.repeat(45) })), 'split-right',
 Assert.eq(L.autoLayout(mk(3, { tagline: 'x'.repeat(46) })), 'split-left',
           'layout: auto picks split-left for long tagline');
 Assert.eq(L.autoLayout(mk(3)), 'split-right', 'layout: auto falls through to split-right');
+// diagonal tidak pernah jadi pilihan auto - ia hanya masuk lewat render set
+// atau kalau diminta eksplisit. Kalau suatu saat autoLayout memilihnya, ini
+// yang jadi alarmnya.
+[1, 2, 3, 4, 5, 6].forEach(function (n) {
+  Assert.ok(L.autoLayout(mk(n)) !== 'diagonal',
+            'layout: auto never picks diagonal (' + n + ' screens)');
+});
 
 Assert.eq(L.renderSet(mk(1)), ['solo'], 'layout: render set for 1 screen is solo alone');
-Assert.eq(L.renderSet(mk(2)), ['solo', 'split-right', 'split-left'],
-          'layout: render set for 2 screens holds three, auto first');
-Assert.eq(L.renderSet(mk(3)), ['split-right', 'split-left', 'centered', 'solo'],
+Assert.eq(L.renderSet(mk(2)), ['duo', 'split-right', 'split-left', 'solo'],
+          'layout: render set for 2 screens holds four, duo first');
+Assert.eq(L.renderSet(mk(3)), ['split-right', 'split-left', 'diagonal', 'centered'],
           'layout: render set for 3 screens holds four without scatter');
-Assert.eq(L.renderSet(mk(4)), ['split-right', 'split-left', 'centered', 'solo'],
+Assert.eq(L.renderSet(mk(4)), ['split-right', 'split-left', 'diagonal', 'centered'],
           'layout: render set for 4 screens holds four without scatter, auto first');
-Assert.eq(L.renderSet(mk(5)), ['scatter', 'split-right', 'split-left', 'centered'],
+Assert.eq(L.renderSet(mk(5)), ['scatter', 'split-right', 'split-left', 'diagonal'],
           'layout: render set for 5 screens holds four with scatter first');
-Assert.eq(L.renderSet(mk(6)), ['scatter', 'split-right', 'split-left', 'centered'],
+Assert.eq(L.renderSet(mk(6)), ['scatter', 'split-right', 'split-left', 'diagonal'],
           'layout: render set for 6 screens holds four with scatter first');
 Assert.eq(L.renderSet(mk(6, { layout: 'centered' })), ['centered'],
           'layout: explicit layout renders exactly one');
+Assert.eq(L.renderSet(mk(6, { layout: 'diagonal' })), ['diagonal'],
+          'layout: explicit diagonal renders exactly one');
 </script>
 
 <script src="../assets/js/decor.js"></script>
@@ -246,7 +266,9 @@ var D = CoverMaker.decor;
 Assert.eq(D.forArchetype('split-right'), 'brush', 'decor: split-right maps to brush');
 Assert.eq(D.forArchetype('split-left'), 'brush', 'decor: split-left maps to brush');
 Assert.eq(D.forArchetype('centered'), 'dots', 'decor: centered maps to dots');
+Assert.eq(D.forArchetype('diagonal'), 'grid', 'decor: diagonal maps to grid');
 Assert.eq(D.forArchetype('scatter'), 'blob', 'decor: scatter maps to blob');
+Assert.eq(D.forArchetype('duo'), 'brush', 'decor: duo maps to brush');
 Assert.eq(D.forArchetype('solo'), 'blob', 'decor: solo maps to blob');
 
 Assert.eq(D.resolve('none', 'centered'), null, 'decor: none resolves to null');

@@ -1,7 +1,7 @@
 (function (global) {
   var NS = global.CoverMaker = global.CoverMaker || {};
 
-  var LAYOUTS = ['auto', 'split-right', 'split-left', 'centered', 'scatter', 'solo'];
+  var LAYOUTS = ['auto', 'split-right', 'split-left', 'diagonal', 'centered', 'scatter', 'duo', 'solo'];
   var DECORS  = ['auto', 'brush', 'blob', 'dots', 'grid', 'none'];
   var MANUAL_KEYS = ['base', 'accent', 'ink', 'surfaceA', 'surfaceB'];
 

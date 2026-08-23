@@ -182,3 +182,33 @@ html, body { margin: 0; padding: 0; background: #fff; }
 .layout-scatter .stage .phone:nth-child(n+7) { display: none; }
 .layout-scatter .copy { right: 90px; top: 50%; transform: translateY(-50%); width: 560px; }
 .layout-scatter .decor { opacity: .20; }
+
+/* --- arketipe: duo (dua HP tegak bertumpuk di kanan, teks kiri) ---
+   Acuan example/cover5.webp. Bedanya dengan split-left: HP-nya tidak
+   dimiringkan sama sekali dan hanya ada dua, jadi kedua screenshot terbaca
+   penuh. Tumpang tindihnya sengaja tipis (30px, ~9% lebar HP belakang) dan
+   berhenti jauh dari pita header HP belakang, jadi judul layar di belakang
+   tetap kebaca. Keduanya bleed keluar batas bawah kanvas. */
+.layout-duo .stage { position: absolute; right: 0; top: 0; width: 780px; height: 900px; }
+.layout-duo .stage .phone:nth-child(1) { --pw: 320px; left: 80px;  top: 300px; z-index: 2; }
+.layout-duo .stage .phone:nth-child(2) { --pw: 340px; left: 370px; top: 185px; z-index: 1; }
+.layout-duo .stage .phone:nth-child(n+3) { display: none; }
+.layout-duo .copy { left: 110px; top: 50%; transform: translateY(-50%); width: 640px; }
+.layout-duo .decor { opacity: .16; transform: scaleX(-1); }
+
+/* --- arketipe: diagonal (kisi HP miring seragam, bleed atas/kanan) ---
+   Acuan example/cover4.webp. Semua HP dimiringkan pada sudut yang sama
+   (12deg) dan disusun sebagai kisi diagonal, bukan disebar acak seperti
+   scatter: hero utuh di tengah-kanan, dua kartu di atasnya hanya kelihatan
+   bagian bawahnya (bleed ke atas), satu lagi cuma sepotong di tepi kanan.
+   Hanya empat slot yang diberi posisi - itu jumlah yang muat tanpa saling
+   mengubur pada rotasi sebesar ini; screen ke-5 dan ke-6 disembunyikan. */
+.layout-diagonal .stage { position: absolute; left: 0; top: 0; width: 1600px; height: 900px; }
+.layout-diagonal .stage .phone { transform-origin: center; transform: rotate(12deg); }
+.layout-diagonal .stage .phone:nth-child(1) { --pw: 330px; left: 985px;  top: 112px;  z-index: 4; }
+.layout-diagonal .stage .phone:nth-child(2) { --pw: 300px; left: 750px;  top: -495px; z-index: 3; }
+.layout-diagonal .stage .phone:nth-child(3) { --pw: 300px; left: 1270px; top: -435px; z-index: 2; }
+.layout-diagonal .stage .phone:nth-child(4) { --pw: 300px; left: 1510px; top: 195px;  z-index: 1; }
+.layout-diagonal .stage .phone:nth-child(n+5) { display: none; }
+.layout-diagonal .copy { left: 110px; top: 50%; transform: translateY(-50%); width: 620px; }
+.layout-diagonal .decor { opacity: .14; }

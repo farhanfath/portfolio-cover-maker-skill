@@ -11,7 +11,9 @@
     'split-right': 'brush',
     'split-left': 'brush',
     'centered': 'dots',
+    'diagonal': 'grid',
     'scatter': 'blob',
+    'duo': 'brush',
     'solo': 'blob'
   };
   function forArchetype(a) { return BY_ARCHETYPE[a] || 'brush'; }
