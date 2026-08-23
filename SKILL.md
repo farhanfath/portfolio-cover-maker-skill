@@ -44,9 +44,10 @@ Buka tiap kandidat dengan Read. Putuskan:
 
 Ambil 3-5 (maksimum 6), urutkan dari yang paling kuat, tandai tepat satu sebagai `hero`.
 
-**Kalau yang layak hanya 1-2, itu sah.** Lanjutkan; layout `solo` memang untuk itu.
-Beri tahu user bahwa menambah screenshot membuka layout lain, tapi tetap serahkan hasil.
-Jangan pernah menolak user karena screenshot-nya sedikit.
+**Kalau yang layak hanya 1-2, itu sah.** Lanjutkan; `solo` (1 screenshot) dan `duo`
+(2 screenshot) memang untuk itu. Beri tahu user bahwa menambah screenshot membuka
+layout lain, tapi tetap serahkan hasil. Jangan pernah menolak user karena
+screenshot-nya sedikit.
 
 ### 3. Tulis `cover.json`
 
@@ -81,6 +82,8 @@ kurang bagus, perbaiki di langkah 5 — bukan berarti file ditolak.
 README tidak punya kalimat yang enak dipakai.
 
 Biarkan `layout`, `palette.mode`, dan `decor` di `"auto"` kecuali kamu punya alasan.
+Nilai eksplisit `layout` yang valid: `solo`, `duo`, `split-right`, `split-left`,
+`centered`, `diagonal`, `scatter` — anatominya di `references/layouts.md`.
 
 ### 4. Render
 
@@ -116,8 +119,12 @@ memilih.
 
 ## Referensi
 
-- `references/layouts.md` — anatomi tiap arketipe, kapan dipakai. Baca kalau perlu memilih
-  layout secara manual.
+- `references/layouts.md` — anatomi ketujuh arketipe (`solo`, `duo`, `split-right`,
+  `split-left`, `centered`, `diagonal`, `scatter`), kapan masing-masing dipakai. Baca
+  kalau perlu memilih layout secara manual.
+- `example/cover1-5.webp` — cover acuan yang jadi dasar arketipe-arketipe itu. Buka
+  dengan Read kalau user minta "yang modelnya kayak gini" atau kamu perlu membandingkan
+  hasil render dengan target rasa yang dituju.
 - `references/capture-adb.md` — protokol capture lewat adb. Baca hanya kalau jalur itu dipakai.
 
 ## Yang tidak dikerjakan skill ini

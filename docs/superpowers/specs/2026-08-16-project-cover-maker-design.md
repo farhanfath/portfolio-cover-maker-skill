@@ -45,6 +45,20 @@ Tiga contoh cover di `example/` dianalisis dan ternyata punya struktur identik:
 
 Kesimpulannya: ini masalah **layout system**, bukan masalah generasi gambar.
 
+Dua acuan ditambahkan setelah versi pertama jalan, dan keduanya juga cocok dengan
+struktur yang sama — cuma susunan mockup-nya yang beda, jadi keduanya masuk sebagai
+arketipe baru, bukan sebagai perubahan arsitektur:
+
+| Elemen | cover4 (Github User App) | cover5 (NewsSphere) |
+|---|---|---|
+| Kanvas | 16:9 | 16:9 |
+| Background | gradient ungu gelap | gradient biru |
+| Mockup | 4 HP miring seragam, kisi diagonal, bleed atas/kanan | 2 HP tegak bertumpuk, bleed bawah |
+| Teks | wordmark + tagline (kiri) | wordmark + tagline (kiri) |
+| Badge | - | - |
+
+Jadi arketipe `diagonal` (dari cover4) dan `duo` (dari cover5).
+
 ---
 
 ## 3. Non-goals
@@ -347,6 +361,11 @@ lock, atau `em` terhadap font-size root yang di-set dari lebar kanvas). Konsekue
 mengganti scale tidak pernah menggeser layout.
 
 ### 8.2 Lima arketipe layout
+
+> Revisi: setelah `example/cover4.webp` dan `example/cover5.webp` masuk sebagai acuan,
+> `diagonal` dan `duo` ditambahkan sehingga sekarang ada tujuh. Yang berlaku untuk
+> keduanya (kelayakan, urutan render set, anatomi CSS) ada di `references/layouts.md`;
+> §8.2 dan §8.3 di bawah dibiarkan seperti aslinya sebagai catatan desain awal.
 
 - **`split-right`** — 3 HP overlap menumpuk di kiri membentuk fan; HP `hero` di posisi
   paling belakang dan paling tinggi. Wordmark + tagline + badge rata kiri di kolom kanan.
