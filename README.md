@@ -1,12 +1,13 @@
 # Project Cover Maker
 
-A Claude Code skill that turns a mobile app project into portfolio cover images.
+An agent skill that turns a mobile app project into portfolio cover images.
 
-Point Claude at your app repo. It finds your screenshots, picks the good ones, derives a
-colour palette from the screenshots themselves, and renders up to four **3200×1800 PNG**
-covers — phone mockups, project name, tagline, the lot.
+Point your coding agent at your app repo. It finds your screenshots, picks the good ones,
+derives a colour palette from the screenshots themselves, and renders up to four
+**3200×1800 PNG** covers — phone mockups, project name, tagline, the lot.
 
-No design tool, no API key, no build step, no dependencies. All it needs is a
+Works with Claude Code, Codex, Cursor, OpenCode, and anything else that reads a skills
+directory. No design tool, no API key, no build step, no dependencies — all it needs is a
 Chromium-based browser already on your machine.
 
 ---
@@ -36,9 +37,10 @@ about it was configured by hand.</sub>
 /plugin install project-cover-maker@farhanfath-skills
 ```
 
-The one worth preferring: it keeps itself up to date, and nothing lands in your project.
+Worth preferring if you're on Claude Code: it keeps itself up to date, and nothing
+lands in your project.
 
-### Anywhere else — npx
+### Every other agent — npx
 
 Codex, Cursor, OpenCode, Claude Desktop, and anything else that reads a skills
 directory, via the [`skills`](https://github.com/vercel-labs/skills) CLI:
@@ -56,11 +58,16 @@ which agents get it. Update later with `npx skills update`, remove with
 
 ```bash
 git clone https://github.com/farhanfath/portfolio-cover-maker-skill.git
-cp -r portfolio-cover-maker-skill/skills/project-cover-maker ~/.claude/skills/
+cp -r portfolio-cover-maker-skill/skills/project-cover-maker <your-skills-dir>/
 ```
 
 Copy the inner `skills/project-cover-maker/` directory, not the repo — the repo root
 holds the tests and manifests, and a skills directory expects `SKILL.md` at the top.
+
+Where `<your-skills-dir>` is whatever your agent reads: `~/.claude/skills` for Claude,
+`~/.codex/skills` for Codex, `~/.opencode/skills` for OpenCode, or `.claude/skills` in a
+project for any of them. `npx skills add` figures this out for you, which is why it's
+the easier path.
 </details>
 
 ## Requirements
@@ -84,7 +91,7 @@ or
 > make me a portfolio cover for this app
 ```
 
-Claude will:
+The agent will:
 
 1. **Find your material** — looks in `screenshots/`, `docs/screenshots/`,
    `assets/screenshots/`, `docs/`, `example/`, then the repo root. Also hunts for a logo
@@ -101,7 +108,7 @@ Claude will:
 
 Output lands in `cover-output/` next to your `cover.json`, not in the skill folder.
 
-No screenshots at all? Claude will offer to capture them over `adb` — and it will ask you
+No screenshots at all? It will offer to capture them over `adb` — and it will ask you
 to drive the app, not navigate it blindly.
 
 ## Layouts
