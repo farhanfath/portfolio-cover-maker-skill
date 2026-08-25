@@ -1,0 +1,16 @@
+{
+  "name": "farhanfath-skills",
+  "description": "Design and portfolio skills for Claude Code, by farhanfath",
+  "owner": {
+    "name": "farhanfath",
+    "url": "https://github.com/farhanfath"
+  },
+  "plugins": [
+    {
+      "name": "project-cover-maker",
+      "source": "./",
+      "category": "design",
+      "tags": ["portfolio", "mobile", "design"]
+    }
+  ]
+}

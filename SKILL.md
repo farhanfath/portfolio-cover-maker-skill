@@ -19,19 +19,33 @@ Chrome / Chromium / Edge terpasang. Tidak ada dependency lain. Kalau tidak ada b
 sama sekali, skill tetap menghasilkan halaman HTML self-contained yang bisa dibuka dan
 di-screenshot user secara manual — jangan pernah pulang dengan tangan kosong.
 
+## Dua akar path
+
+Skill ini selalu bekerja di dua folder sekaligus. Jangan tertukar.
+
+- **Skill root** — folder tempat `SKILL.md` ini berada; isinya `assets/`, `scripts/`,
+  `references/`, `example/`. Perlakukan sebagai read-only. Kalau skill dipasang sebagai
+  plugin, path-nya tersedia di environment variable `${CLAUDE_PLUGIN_ROOT}`.
+- **Project user** — folder project yang sedang dikerjakan (cwd). Di sinilah screenshot
+  dicari, `cover.json` ditulis, dan hasil render disimpan.
+
+Di dokumen ini, path yang diawali `<skill>/` relatif terhadap skill root; path lain
+relatif terhadap project user. **Jangan pernah menulis apa pun ke skill root** — satu
+skill yang sama dipakai lintas project.
+
 ## Alur kerja
 
 ### 1. Kumpulkan bahan
 
-Cari screenshot berurutan di: `screenshots/`, `docs/screenshots/`, `assets/screenshots/`,
-`docs/`, `example/`, lalu root. Ekstensi: `.png .jpg .jpeg .webp`.
+Cari screenshot berurutan di dalam project user: `screenshots/`, `docs/screenshots/`,
+`assets/screenshots/`, `docs/`, `example/`, lalu root. Ekstensi: `.png .jpg .jpeg .webp`.
 
 Cari logo: `logo.*`, `ic_launcher*`, `app_icon*`, `icon.*`.
 Baca `README.md` untuk nama project dan deskripsi. Kalau ada, ambil nama app dari
 `pubspec.yaml`, `build.gradle(.kts)`, atau `package.json`.
 
-Kalau screenshot yang ditemukan **nol**, baca `references/capture-adb.md` dan tawarkan
-jalur capture lewat adb.
+Kalau screenshot yang ditemukan **nol**, baca `<skill>/references/capture-adb.md` dan
+tawarkan jalur capture lewat adb.
 
 ### 2. Lihat screenshotnya
 
@@ -51,7 +65,8 @@ screenshot-nya sedikit.
 
 ### 3. Tulis `cover.json`
 
-Taruh di folder yang sama dengan screenshot. `src` relatif terhadap file ini.
+Taruh di folder yang sama dengan screenshot, di dalam project user. `src` relatif
+terhadap file ini.
 
 ```json
 {
@@ -81,16 +96,27 @@ kurang bagus, perbaiki di langkah 5 — bukan berarti file ditolak.
 **Tagline:** satu kalimat manfaat, 6-10 kata. Bukan daftar fitur. Tulis sendiri kalau
 README tidak punya kalimat yang enak dipakai.
 
+**`output.dir`** relatif terhadap `cover.json`, bukan terhadap cwd. Kalau screenshot
+ada di folder dalam (mis. `docs/screenshots/`), set nilainya ke path yang wajar buat
+user — mis. `"../../cover-output"` supaya hasil mendarat di root project.
+
 Biarkan `layout`, `palette.mode`, dan `decor` di `"auto"` kecuali kamu punya alasan.
 Nilai eksplisit `layout` yang valid: `solo`, `duo`, `split-right`, `split-left`,
-`centered`, `diagonal`, `scatter` — anatominya di `references/layouts.md`.
+`centered`, `diagonal`, `scatter` — anatominya di `<skill>/references/layouts.md`.
 
 ### 4. Render
 
 ```bash
-bash scripts/render.sh path/to/cover.json      # macOS/Linux
-powershell -File scripts/render.ps1 path/to/cover.json   # Windows
+# macOS/Linux
+bash "${CLAUDE_PLUGIN_ROOT}/scripts/render.sh" path/to/cover.json
+
+# Windows
+powershell -File "${CLAUDE_PLUGIN_ROOT}\scripts\render.ps1" path/to/cover.json
 ```
+
+Kalau `CLAUDE_PLUGIN_ROOT` kosong (skill dipasang manual, bukan lewat plugin), ganti
+dengan path absolut skill root. Jangan pakai path relatif: cwd kamu adalah project
+user, bukan skill root.
 
 Menghasilkan hingga 4 PNG plus `render-*.html` di `output.dir`.
 
@@ -119,13 +145,14 @@ memilih.
 
 ## Referensi
 
-- `references/layouts.md` — anatomi ketujuh arketipe (`solo`, `duo`, `split-right`,
-  `split-left`, `centered`, `diagonal`, `scatter`), kapan masing-masing dipakai. Baca
-  kalau perlu memilih layout secara manual.
-- `example/cover1-5.webp` — cover acuan yang jadi dasar arketipe-arketipe itu. Buka
-  dengan Read kalau user minta "yang modelnya kayak gini" atau kamu perlu membandingkan
-  hasil render dengan target rasa yang dituju.
-- `references/capture-adb.md` — protokol capture lewat adb. Baca hanya kalau jalur itu dipakai.
+- `<skill>/references/layouts.md` — anatomi ketujuh arketipe (`solo`, `duo`,
+  `split-right`, `split-left`, `centered`, `diagonal`, `scatter`), kapan masing-masing
+  dipakai. Baca kalau perlu memilih layout secara manual.
+- `<skill>/example/cover1-5.webp` — cover acuan yang jadi dasar arketipe-arketipe itu.
+  Buka dengan Read kalau user minta "yang modelnya kayak gini" atau kamu perlu
+  membandingkan hasil render dengan target rasa yang dituju.
+- `<skill>/references/capture-adb.md` — protokol capture lewat adb. Baca hanya kalau
+  jalur itu dipakai.
 
 ## Yang tidak dikerjakan skill ini
 
