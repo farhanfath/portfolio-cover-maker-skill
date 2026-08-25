@@ -1,0 +1,40 @@
+{
+  "name": "project-cover-maker",
+  "version": "0.1.0",
+  "description": "Portfolio cover images for mobile app projects, built from the app's own screenshots. A Claude Code skill.",
+  "bin": {
+    "project-cover-maker": "bin/install.js"
+  },
+  "files": [
+    "bin/",
+    "SKILL.md",
+    "assets/",
+    "scripts/",
+    "references/",
+    "example/"
+  ],
+  "engines": {
+    "node": ">=16.7"
+  },
+  "keywords": [
+    "claude",
+    "claude-code",
+    "skill",
+    "portfolio",
+    "cover",
+    "mobile",
+    "screenshot",
+    "mockup",
+    "design"
+  ],
+  "author": "farhanfath (https://github.com/farhanfath)",
+  "license": "MIT",
+  "homepage": "https://github.com/farhanfath/portfolio-cover-maker-skill#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/farhanfath/portfolio-cover-maker-skill.git"
+  },
+  "bugs": {
+    "url": "https://github.com/farhanfath/portfolio-cover-maker-skill/issues"
+  }
+}

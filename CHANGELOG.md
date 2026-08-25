@@ -18,5 +18,8 @@ First release.
   still work when no browser is installed.
 - `cover.json` validation with field-specific messages, hard limits on `screens` and
   `tagline`, and soft trimming with warnings for `name`, `badges`, and `meta`.
+- Two install paths: a Claude Code plugin (`/plugin install`), and `npx
+  project-cover-maker` for clients without a plugin system. The npx installer has no
+  dependencies and refuses to overwrite a directory that holds someone else's skill.
 - adb capture protocol for projects that ship no screenshots.
 - Fixture-based end-to-end tests asserting output count, file size, and dimensions.

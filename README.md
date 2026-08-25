@@ -6,21 +6,21 @@ Point Claude at your app repo. It finds your screenshots, picks the good ones, d
 colour palette from the screenshots themselves, and renders up to four **3200×1800 PNG**
 covers — phone mockups, project name, tagline, the lot.
 
-No design tool, no API key, no npm install. All it needs is a Chromium-based browser
-already on your machine.
+No design tool, no API key, no build step, no dependencies. All it needs is a
+Chromium-based browser already on your machine.
 
 ---
 
 ## What it makes
 
-![Bank Sampah portfolio cover, split-left layout](docs/preview/split-left.webp)
+![Bank Sampah portfolio cover, split-left layout](https://raw.githubusercontent.com/farhanfath/portfolio-cover-maker-skill/main/docs/preview/split-left.webp)
 
 Four variants come out of a single run — same screenshots, same derived palette,
 different composition. Pick the one that fits where you're posting it:
 
 |  |  |  |
 |:--:|:--:|:--:|
-| ![split-right layout](docs/preview/split-right.webp) | ![centered layout](docs/preview/centered.webp) | ![solo layout](docs/preview/solo.webp) |
+| ![split-right layout](https://raw.githubusercontent.com/farhanfath/portfolio-cover-maker-skill/main/docs/preview/split-right.webp) | ![centered layout](https://raw.githubusercontent.com/farhanfath/portfolio-cover-maker-skill/main/docs/preview/centered.webp) | ![solo layout](https://raw.githubusercontent.com/farhanfath/portfolio-cover-maker-skill/main/docs/preview/solo.webp) |
 | `split-right` | `centered` | `solo` |
 
 <sub>Real output, not a mockup: an Android waste-bank app, built from nine screenshots
@@ -29,25 +29,47 @@ about it was configured by hand.</sub>
 
 ## Install
 
+### Claude Code — as a plugin
+
 ```
 /plugin marketplace add farhanfath/portfolio-cover-maker-skill
 /plugin install project-cover-maker@farhanfath-skills
 ```
 
-That's it. The skill loads itself when you ask for a cover.
+The one worth preferring: it keeps itself up to date, and nothing lands in your project.
+
+### Anywhere else — npx
+
+For Claude Desktop, or any client that reads a `skills/` directory:
+
+```bash
+npx project-cover-maker
+```
+
+Copies the skill into `~/.claude/skills/project-cover-maker`. Nothing is installed
+globally and the package has no dependencies — it is a copy step, not a runtime.
+
+```bash
+npx project-cover-maker --project      # into ./.claude/skills/ instead, for one repo
+npx project-cover-maker --dir <path>   # into an exact directory
+npx project-cover-maker --help
+```
+
+Re-run it to update. It refuses to touch the target if something unrelated is already
+sitting there, so it won't quietly eat another skill that happens to share the name.
+
+Updating means re-running the command yourself — there's no background check on this
+path. That's the trade for not needing the plugin system.
 
 <details>
-<summary>Manual install (no plugin system)</summary>
-
-Clone into your skills directory instead:
+<summary>Or just clone it</summary>
 
 ```bash
 git clone https://github.com/farhanfath/portfolio-cover-maker-skill.git \
   ~/.claude/skills/project-cover-maker
 ```
 
-Everything works the same, except `${CLAUDE_PLUGIN_ROOT}` is unset — Claude will use the
-skill's absolute path instead.
+Same result, plus the tests and the plugin manifests you don't need.
 </details>
 
 ## Requirements
@@ -151,11 +173,15 @@ phone mockup of something that isn't a phone app, which helps nobody.
 
 ## Updates
 
-Claude Code checks for new versions in the background. To pull one immediately:
+Installed as a plugin, Claude Code checks in the background and offers you the new
+version. To pull one immediately:
 
 ```
 /plugin marketplace update farhanfath-skills
 ```
+
+Installed via npx, re-run `npx project-cover-maker` — it overwrites in place and tells
+you which version it wrote.
 
 What changed in each release is in [CHANGELOG.md](CHANGELOG.md).
 
@@ -168,11 +194,17 @@ scripts/render.{sh,ps1}   builds a self-contained page, screenshots it headless
 references/layouts.md     anatomy of all seven archetypes
 references/capture-adb.md the adb capture protocol
 example/                  reference covers the archetypes were designed against
+bin/install.js            the npx installer
+.claude-plugin/           plugin and marketplace manifests
 docs/preview/             the sample output shown above
 tests/                    fixture-based end-to-end render tests
 ```
 
 Run the tests with `bash tests/run.sh` or `powershell -File tests\run.ps1`.
+
+Releases go out on two channels with separate version numbers —
+`.claude-plugin/plugin.json` for the marketplace, `package.json` for npm — so the suite
+fails if they drift. Bump both.
 
 ## License
 

@@ -81,4 +81,27 @@ foreach ($p in $pngs) {
 }
 if ($e2eOk) { Write-Output 'PASS :: e2e render produced 4 valid 3200x1800 covers' } else { exit 1 }
 
+# --- Test #7: satu versi, dua file ---
+# Rilis diumumkan lewat dua jalur yang punya nomor versinya masing-masing:
+# plugin.json (dibaca Claude Code untuk menawarkan update) dan package.json
+# (dibaca npm). Kalau salah satu lupa dinaikkan, separuh pengguna tidak pernah
+# ditawari update dan tidak ada yang error - itu diam-diamnya berbahaya.
+function Get-DeclaredVersion($path) {
+  # Read-Utf8 lives in render.ps1, not here; read via .NET so a BOM-less file
+  # is not reinterpreted through the system ANSI codepage on PowerShell 5.1.
+  $m = [regex]::Match([IO.File]::ReadAllText($path, [Text.Encoding]::UTF8), '"version"\s*:\s*"([^"]*)"')
+  if ($m.Success) { return $m.Groups[1].Value } else { return '' }
+}
+$pluginVer = Get-DeclaredVersion (Join-Path $here '..\.claude-plugin\plugin.json')
+$npmVer    = Get-DeclaredVersion (Join-Path $here '..\package.json')
+if (-not $pluginVer -or -not $npmVer) {
+  Write-Output "FAIL :: could not read version from plugin.json ('$pluginVer') or package.json ('$npmVer')"
+  exit 1
+}
+if ($pluginVer -ne $npmVer) {
+  Write-Output "FAIL :: version drift :: plugin.json=$pluginVer package.json=$npmVer"
+  exit 1
+}
+Write-Output "PASS :: plugin.json and package.json agree on version $pluginVer"
+
 Write-Output "--- unit tests passed ---"
