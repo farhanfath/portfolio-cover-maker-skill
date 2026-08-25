@@ -55,11 +55,12 @@ which agents get it. Update later with `npx skills update`, remove with
 <summary>Or just clone it</summary>
 
 ```bash
-git clone https://github.com/farhanfath/portfolio-cover-maker-skill.git \
-  ~/.claude/skills/project-cover-maker
+git clone https://github.com/farhanfath/portfolio-cover-maker-skill.git
+cp -r portfolio-cover-maker-skill/skills/project-cover-maker ~/.claude/skills/
 ```
 
-Same result, plus the tests you don't need.
+Copy the inner `skills/project-cover-maker/` directory, not the repo — the repo root
+holds the tests and manifests, and a skills directory expects `SKILL.md` at the top.
 </details>
 
 ## Requirements
@@ -151,9 +152,11 @@ at most 64 characters.
 ### Rendering by hand
 
 ```bash
-bash scripts/render.sh path/to/cover.json                    # macOS/Linux
-powershell -File scripts\render.ps1 path\to\cover.json        # Windows
+bash skills/project-cover-maker/scripts/render.sh path/to/cover.json
+powershell -File skills\project-cover-maker\scripts\render.ps1 path\to\cover.json
 ```
+
+From an installed copy, that's `<skills-dir>/project-cover-maker/scripts/render.sh`.
 
 ## Scope
 
@@ -177,19 +180,23 @@ What changed in each release is in [CHANGELOG.md](CHANGELOG.md).
 ## Layout of this repo
 
 ```
-SKILL.md                  the agent-facing instructions
-assets/                   CSS, JS, fonts, decorative SVGs — the renderer
-scripts/render.{sh,ps1}   builds a self-contained page, screenshots it headless
-references/layouts.md     anatomy of all seven archetypes
-references/capture-adb.md the adb capture protocol
-example/                  reference covers the archetypes were designed against
-.claude-plugin/           plugin and marketplace manifests
-docs/preview/             the sample output shown above
-tests/                    fixture-based end-to-end render tests
+skills/project-cover-maker/     everything that ships to a user
+  SKILL.md                      the agent-facing instructions
+  assets/                       CSS, JS, fonts, decorative SVGs — the renderer
+  scripts/render.{sh,ps1}       builds a self-contained page, screenshots it headless
+  references/layouts.md         anatomy of all seven archetypes
+  references/capture-adb.md     the adb capture protocol
+  example/                      reference covers the archetypes were designed against
+
+.claude-plugin/                 plugin and marketplace manifests
+docs/preview/                   the sample output shown above
+tests/                          fixture-based end-to-end render tests
 ```
 
-`SKILL.md` sits at the repo root on purpose: that is the single-skill plugin layout, and
-it is also what the `skills` CLI discovers first. One tree serves both install paths.
+The `skills/<name>/` nesting is what draws the line between the skill and its
+repository. Both installers copy that directory and nothing above it, so `tests/`,
+`docs/`, and the manifests stay out of what lands on a user's machine — no ignore file
+involved. Anything the skill reads at runtime has to live inside it.
 
 Run the tests with `bash tests/run.sh` or `powershell -File tests\run.ps1`.
 

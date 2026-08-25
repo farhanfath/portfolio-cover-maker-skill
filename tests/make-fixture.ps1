@@ -1,6 +1,6 @@
 $ErrorActionPreference = 'Stop'
 $here = Split-Path -Parent $MyInvocation.MyCommand.Path
-$browser = & "$here\..\scripts\find-browser.ps1"
+$browser = & "$here\..\skills\project-cover-maker\scripts\find-browser.ps1"
 if (-not $browser) { Write-Output 'no browser found'; exit 1 }
 $u = ($here -replace '\\','/')
 

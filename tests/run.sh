@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -u
 HERE="$(cd "$(dirname "$0")" && pwd)"
-BROWSER="$(bash "$HERE/../scripts/find-browser.sh")" || { echo "FAIL :: no Chromium-based browser found"; exit 1; }
+BROWSER="$(bash "$HERE/../skills/project-cover-maker/scripts/find-browser.sh")" || { echo "FAIL :: no Chromium-based browser found"; exit 1; }
 
 # On Git Bash/MSYS, $HERE is a POSIX-style path (e.g. /d/foo). A native Windows
 # Chrome binary can't resolve that in a file:// URL, so convert via cygpath
@@ -24,7 +24,7 @@ if echo "$OUT" | grep -q 'FAIL ::'; then echo "--- unit tests FAILED ---"; exit 
 # --- Test #5: halaman render benar-benar self-contained ---
 OUTDIR="$HERE/../cover-output-test"
 rm -rf "$OUTDIR"
-bash "$HERE/../scripts/render.sh" "$HERE/fixture/cover.json" >/dev/null || {
+bash "$HERE/../skills/project-cover-maker/scripts/render.sh" "$HERE/fixture/cover.json" >/dev/null || {
   echo "FAIL :: render.sh exited non-zero"; exit 1; }
 
 SELF_OK=1

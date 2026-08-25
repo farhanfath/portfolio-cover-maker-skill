@@ -24,8 +24,10 @@ di-screenshot user secara manual — jangan pernah pulang dengan tangan kosong.
 Skill ini selalu bekerja di dua folder sekaligus. Jangan tertukar.
 
 - **Skill root** — folder tempat `SKILL.md` ini berada; isinya `assets/`, `scripts/`,
-  `references/`, `example/`. Perlakukan sebagai read-only. Kalau skill dipasang sebagai
-  plugin, path-nya tersedia di environment variable `${CLAUDE_PLUGIN_ROOT}`.
+  `references/`, `example/`. Perlakukan sebagai read-only. Definisi ini selalu benar,
+  apa pun cara pemasangannya — kalau ragu, pakai lokasi file ini. Khusus pemasangan
+  lewat plugin, skill root = `${CLAUDE_PLUGIN_ROOT}/skills/project-cover-maker`
+  (`CLAUDE_PLUGIN_ROOT` menunjuk ke akar plugin, bukan ke skill).
 - **Project user** — folder project yang sedang dikerjakan (cwd). Di sinilah screenshot
   dicari, `cover.json` ditulis, dan hasil render disimpan.
 
@@ -108,15 +110,17 @@ Nilai eksplisit `layout` yang valid: `solo`, `duo`, `split-right`, `split-left`,
 
 ```bash
 # macOS/Linux
-bash "${CLAUDE_PLUGIN_ROOT}/scripts/render.sh" path/to/cover.json
+bash "<skill>/scripts/render.sh" path/to/cover.json
 
 # Windows
-powershell -File "${CLAUDE_PLUGIN_ROOT}\scripts\render.ps1" path/to/cover.json
+powershell -File "<skill>\scripts\render.ps1" path/to/cover.json
 ```
 
-Kalau `CLAUDE_PLUGIN_ROOT` kosong (skill dipasang manual, bukan lewat plugin), ganti
-dengan path absolut skill root. Jangan pakai path relatif: cwd kamu adalah project
-user, bukan skill root.
+Ganti `<skill>` dengan skill root — path absolut folder tempat `SKILL.md` ini berada.
+Lewat plugin itu `${CLAUDE_PLUGIN_ROOT}/skills/project-cover-maker`; lewat `skills add`
+atau clone manual biasanya `~/.claude/skills/project-cover-maker`.
+
+Jangan pakai path relatif: cwd kamu adalah project user, bukan skill root.
 
 Menghasilkan hingga 4 PNG plus `render-*.html` di `output.dir`.
 

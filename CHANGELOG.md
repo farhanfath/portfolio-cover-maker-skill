@@ -19,7 +19,7 @@ First release.
 - `cover.json` validation with field-specific messages, hard limits on `screens` and
   `tagline`, and soft trimming with warnings for `name`, `badges`, and `meta`.
 - Two install paths off one tree: the Claude Code plugin marketplace, and `npx skills
-  add` for Codex, Cursor, OpenCode and anything else reading a skills directory. `SKILL.md`
-  at the repo root satisfies both.
+  add` for Codex, Cursor, OpenCode and anything else reading a skills directory. Both read
+  `skills/project-cover-maker/`, so tests, docs and manifests never reach a user's machine.
 - adb capture protocol for projects that ship no screenshots.
 - Fixture-based end-to-end tests asserting output count, file size, and dimensions.

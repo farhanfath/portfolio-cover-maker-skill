@@ -1,5 +1,5 @@
 $here = Split-Path -Parent $MyInvocation.MyCommand.Path
-$browser = & "$here\..\scripts\find-browser.ps1"
+$browser = & "$here\..\skills\project-cover-maker\scripts\find-browser.ps1"
 if (-not $browser) { Write-Output "FAIL :: no Chromium-based browser found"; exit 1 }
 
 $url = "file:///$($here -replace '\\','/')/test.html"
@@ -33,7 +33,7 @@ if ($text -match 'FAIL ::') { Write-Output "--- unit tests FAILED ---"; exit 1 }
 # --- Test #5: halaman render benar-benar self-contained ---
 $outDir = Join-Path $here '..\cover-output-test'
 if (Test-Path $outDir) { Remove-Item $outDir -Recurse -Force }
-& "$here\..\scripts\render.ps1" "$here\fixture\cover.json" | Out-Null
+& "$here\..\skills\project-cover-maker\scripts\render.ps1" "$here\fixture\cover.json" | Out-Null
 
 $selfOk = $true
 $pages = Get-ChildItem (Join-Path $outDir 'render-*.html') -ErrorAction SilentlyContinue

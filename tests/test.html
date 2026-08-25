@@ -6,7 +6,7 @@
 <script>
 Assert.eq(1 + 1, 2, 'harness: sanity');
 </script>
-<script src="../assets/js/palette.js"></script>
+<script src="../skills/project-cover-maker/assets/js/palette.js"></script>
 <canvas id="probe" width="100" height="200" style="display:none"></canvas>
 <script>
 var P = CoverMaker.palette;
@@ -79,7 +79,7 @@ function makeImageData(spec) {
 })();
 </script>
 
-<script src="../assets/js/validate.js"></script>
+<script src="../skills/project-cover-maker/assets/js/validate.js"></script>
 <script>
 var V = CoverMaker.validate.validate;
 
@@ -176,7 +176,7 @@ Assert.throws(function () { var d = good(); d.layout = 'isometric'; V(d); },
 });
 </script>
 
-<script src="../assets/js/layout.js"></script>
+<script src="../skills/project-cover-maker/assets/js/layout.js"></script>
 <script>
 var L = CoverMaker.layout;
 
@@ -250,7 +250,7 @@ Assert.eq(L.renderSet(mk(6, { layout: 'diagonal' })), ['diagonal'],
           'layout: explicit diagonal renders exactly one');
 </script>
 
-<script src="../assets/js/decor.js"></script>
+<script src="../skills/project-cover-maker/assets/js/decor.js"></script>
 <script>
 var D = CoverMaker.decor;
 
@@ -276,7 +276,7 @@ Assert.eq(D.resolve('grid', 'centered'), D.SHAPES.grid, 'decor: explicit choice 
 Assert.eq(D.resolve('auto', 'centered'), D.SHAPES.dots, 'decor: auto follows the archetype');
 </script>
 
-<script src="../assets/js/render.js"></script>
+<script src="../skills/project-cover-maker/assets/js/render.js"></script>
 <script>
 // render.js auto-mounts only when window.COVER_DATA is set (see its bottom
 // guard), which it is not here, so loading it standalone is safe and just

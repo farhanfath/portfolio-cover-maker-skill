@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -eu
 HERE="$(cd "$(dirname "$0")" && pwd)"
-BROWSER="$(bash "$HERE/../scripts/find-browser.sh")" || { echo "no browser found"; exit 1; }
+BROWSER="$(bash "$HERE/../skills/project-cover-maker/scripts/find-browser.sh")" || { echo "no browser found"; exit 1; }
 
 # On Git Bash/MSYS, $HERE is a POSIX-style path (e.g. /d/foo). A native Windows
 # Chrome binary can't resolve that in a file:// URL, so convert via cygpath
