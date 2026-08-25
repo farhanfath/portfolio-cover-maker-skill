@@ -1,0 +1,299 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>cover-maker tests</title>
+<pre id="out"></pre>
+<script src="assert.js"></script>
+<script>
+Assert.eq(1 + 1, 2, 'harness: sanity');
+</script>
+<script src="../skills/project-cover-maker/assets/js/palette.js"></script>
+<canvas id="probe" width="100" height="200" style="display:none"></canvas>
+<script>
+var P = CoverMaker.palette;
+
+// --- Test #1: invarian kontras di seluruh 360 hue ---
+// Disapu dengan langkah 0.5 derajat (bukan integer 0-359) supaya sapuan ini
+// benar-benar melewati ke-24 nilai yang bisa dihasilkan extractHue
+// (palette.js: best * 15 + 7.5, jadi selalu X.5, tak pernah bilangan bulat).
+// Sapuan integer sebelumnya tidak pernah menguji satupun nilai yang
+// sebenarnya dipakai produksi.
+(function () {
+  var worstInk = Infinity, worstBase = Infinity, worstHueInk = -1, worstHueBase = -1;
+  for (var i = 0; i < 720; i++) {
+    var h = i * 0.5;
+    var p = P.derive(h);
+    var cInk  = P.contrast(p.ink,  p.surfaceB);
+    var cBase = P.contrast(p.base, p.surfaceB);
+    if (cInk  < worstInk)  { worstInk  = cInk;  worstHueInk  = h; }
+    if (cBase < worstBase) { worstBase = cBase; worstHueBase = h; }
+  }
+  Assert.ok(worstInk  >= 4.5, 'palette: ink on surface-b >= 4.5:1 for all hues (worst '
+            + worstInk.toFixed(2) + ' at H=' + worstHueInk + ')');
+  Assert.ok(worstBase >= 4.5, 'palette: base on surface-b >= 4.5:1 for all hues (worst '
+            + worstBase.toFixed(2) + ' at H=' + worstHueBase + ')');
+})();
+
+// --- Test #2: ekstraksi hue ---
+function makeImageData(spec) {
+  // spec: array of {frac, rgb}
+  var c = document.getElementById('probe');
+  var ctx = c.getContext('2d');
+  var total = c.width * c.height;
+  var img = ctx.createImageData(c.width, c.height);
+  var i = 0;
+  spec.forEach(function (s) {
+    var n = Math.round(total * s.frac);
+    for (var k = 0; k < n && i < total; k++, i++) {
+      img.data[i * 4] = s.rgb[0]; img.data[i * 4 + 1] = s.rgb[1];
+      img.data[i * 4 + 2] = s.rgb[2]; img.data[i * 4 + 3] = 255;
+    }
+  });
+  for (; i < total; i++) { img.data[i * 4 + 3] = 255; } // sisa: hitam
+  return img;
+}
+
+(function () {
+  // 60% putih (chrome UI) + 25% teal H=160 + 15% hitam (teks) -> harus ketemu ~160
+  var teal = P.oklchToLinearRgb(0.55, 0.13, 160).map(function (v) {
+    v = Math.max(0, Math.min(1, v));
+    return Math.round(255 * (v <= 0.0031308 ? 12.92 * v : 1.055 * Math.pow(v, 1 / 2.4) - 0.055));
+  });
+  var got = P.extractHue(makeImageData([
+    { frac: 0.60, rgb: [255, 255, 255] },
+    { frac: 0.25, rgb: teal },
+    { frac: 0.15, rgb: [0, 0, 0] }
+  ]));
+  Assert.ok(!got.fallback, 'palette: brand hue detected, not fallback');
+  Assert.close(got.hue, 160, 15, 'palette: extracted hue within 15deg of 160');
+})();
+
+(function () {
+  // grayscale penuh -> fallback 215
+  var got = P.extractHue(makeImageData([
+    { frac: 0.5, rgb: [255, 255, 255] },
+    { frac: 0.3, rgb: [128, 128, 128] },
+    { frac: 0.2, rgb: [20, 20, 20] }
+  ]));
+  Assert.ok(got.fallback, 'palette: grayscale image reports fallback');
+  Assert.eq(got.hue, 215, 'palette: grayscale fallback hue is 215');
+})();
+</script>
+
+<script src="../skills/project-cover-maker/assets/js/validate.js"></script>
+<script>
+var V = CoverMaker.validate.validate;
+
+function good() {
+  return {
+    project: { name: 'TripMate', tagline: 'Your smart travel assistant' },
+    screens: [
+      { src: 'a.png', role: 'hero' },
+      { src: 'b.png', role: 'support' },
+      { src: 'c.png', role: 'support' }
+    ]
+  };
+}
+
+Assert.ok(V(good()).warnings.length === 0, 'validate: valid input has no warnings');
+
+// Default terisi
+(function () {
+  var r = V(good());
+  Assert.eq(r.data.layout, 'auto', 'validate: layout defaults to auto');
+  Assert.eq(r.data.palette.mode, 'auto', 'validate: palette.mode defaults to auto');
+  Assert.eq(r.data.decor, 'auto', 'validate: decor defaults to auto');
+  Assert.eq(r.data.output.dir, 'cover-output', 'validate: output.dir default');
+  Assert.eq(r.data.output.scale, 2, 'validate: output.scale default');
+  Assert.eq(r.data.badges, [], 'validate: badges defaults to empty');
+})();
+
+// name >16 -> warning, bukan tolak
+(function () {
+  var d = good(); d.project.name = 'SuperLongProjectName';
+  var r = V(d);
+  Assert.ok(r.warnings.join(' ').indexOf('name') !== -1, 'validate: long name warns about name');
+  Assert.eq(r.data.project.name, 'SuperLongProjectName', 'validate: long name is kept as-is');
+})();
+
+// tagline >64 -> tolak
+(function () {
+  var d = good(); d.project.tagline = 'x'.repeat(65);
+  Assert.throws(function () { V(d); }, 'tagline', 'validate: tagline over 64 is rejected');
+})();
+
+// screens kosong / >6 -> tolak
+Assert.throws(function () { var d = good(); d.screens = []; V(d); },
+              'screens', 'validate: empty screens rejected');
+Assert.throws(function () {
+  var d = good();
+  d.screens = [{ src: 'a.png', role: 'hero' }];
+  for (var i = 0; i < 6; i++) d.screens.push({ src: i + '.png', role: 'support' });
+  V(d);
+}, 'screens', 'validate: more than 6 screens rejected');
+
+// hero bukan tepat satu -> tolak, sebut jumlahnya
+Assert.throws(function () {
+  var d = good(); d.screens[1].role = 'hero'; V(d);
+}, '2', 'validate: two heroes rejected and count reported');
+Assert.throws(function () {
+  var d = good(); d.screens[0].role = 'support'; V(d);
+}, '0', 'validate: zero heroes rejected and count reported');
+
+// src kosong -> tolak, sebut indeksnya
+Assert.throws(function () { var d = good(); d.screens[1].src = ''; V(d); },
+              'screens[1]', 'validate: missing src names the offending index');
+
+// badges >4 -> dipotong + warning
+(function () {
+  var d = good();
+  d.badges = [1,2,3,4,5].map(function (i) { return { src: i + '.png', label: 'b' + i }; });
+  var r = V(d);
+  Assert.eq(r.data.badges.length, 4, 'validate: badges truncated to 4');
+  Assert.ok(r.warnings.join(' ').indexOf('badges') !== -1, 'validate: badge truncation warns');
+})();
+
+// meta >12 -> dipotong + warning
+(function () {
+  var d = good(); d.meta = 'ABCDEFGHIJKLMNOP';
+  var r = V(d);
+  Assert.eq(r.data.meta.length, 12, 'validate: meta truncated to 12');
+  Assert.ok(r.warnings.join(' ').indexOf('meta') !== -1, 'validate: meta truncation warns');
+})();
+
+// palette manual tanpa warna lengkap -> tolak, sebut field yang kurang
+Assert.throws(function () {
+  var d = good(); d.palette = { mode: 'manual', base: '#123456' }; V(d);
+}, 'accent', 'validate: incomplete manual palette names the missing field');
+
+// layout tidak dikenal -> tolak
+Assert.throws(function () { var d = good(); d.layout = 'isometric'; V(d); },
+              'layout', 'validate: unknown layout rejected');
+
+// arketipe yang ditambahkan belakangan tetap lolos validator
+['duo', 'diagonal'].forEach(function (l) {
+  var d = good(); d.layout = l;
+  Assert.eq(V(d).data.layout, l, 'validate: layout "' + l + '" is accepted');
+});
+</script>
+
+<script src="../skills/project-cover-maker/assets/js/layout.js"></script>
+<script>
+var L = CoverMaker.layout;
+
+function mk(n, opts) {
+  opts = opts || {};
+  var screens = [];
+  for (var i = 0; i < n; i++) screens.push({ src: i + '.png', role: i === 0 ? 'hero' : 'support' });
+  return {
+    project: {
+      name: opts.name || 'TripMate',
+      tagline: opts.tagline || 'Your smart travel assistant',
+      logo: opts.logo || null
+    },
+    screens: screens,
+    layout: opts.layout || 'auto'
+  };
+}
+
+Assert.eq(L.eligible(1), ['solo'], 'layout: 1 screen only allows solo');
+Assert.eq(L.eligible(2), ['split-right', 'split-left', 'duo', 'solo'],
+          'layout: 2 screens allow four archetypes');
+Assert.eq(L.eligible(3), ['split-right', 'split-left', 'diagonal', 'centered', 'duo', 'solo'],
+          'layout: 3 screens exclude scatter');
+Assert.eq(L.eligible(4), ['split-right', 'split-left', 'diagonal', 'centered', 'duo', 'solo'],
+          'layout: 4 screens still exclude scatter');
+Assert.eq(L.eligible(5), ['split-right', 'split-left', 'diagonal', 'centered', 'scatter', 'duo', 'solo'],
+          'layout: 5 screens allow all');
+Assert.eq(L.eligible(6), ['split-right', 'split-left', 'diagonal', 'centered', 'scatter', 'duo', 'solo'],
+          'layout: 6 screens allow all (same set as 5)');
+
+Assert.eq(L.autoLayout(mk(1)), 'solo', 'layout: auto picks solo for 1 screen');
+Assert.eq(L.autoLayout(mk(2)), 'duo', 'layout: auto picks duo for exactly 2 screens');
+Assert.eq(L.autoLayout(mk(4)), 'split-right', 'layout: auto picks split-right for 4 screens with short name/tagline');
+Assert.eq(L.autoLayout(mk(5)), 'scatter', 'layout: auto picks scatter for 5 screens (boundary of >=5 rule)');
+Assert.eq(L.autoLayout(mk(6)), 'scatter', 'layout: auto picks scatter for 6 screens');
+Assert.eq(L.autoLayout(mk(3, { logo: 'l.png', name: 'Glowfy' })), 'centered',
+          'layout: auto picks centered when logo present and name short');
+Assert.eq(L.autoLayout(mk(3, { logo: 'l.png', name: 'WanderTrip' })), 'centered',
+          'layout: auto picks centered when name is exactly 10 chars (boundary of <=10 gate)');
+Assert.eq(L.autoLayout(mk(3, { logo: 'l.png', name: 'WanderTripX' })), 'split-left',
+          'layout: auto does not pick centered at 11 chars, falls to split-left via long-name gate');
+Assert.eq(L.autoLayout(mk(3, { name: 'Jamali Parenting' })), 'split-left',
+          'layout: auto picks split-left for long name');
+Assert.eq(L.autoLayout(mk(3, { tagline: 'x'.repeat(45) })), 'split-right',
+          'layout: auto does not pick split-left when tagline is exactly 45 chars (boundary of >45 gate)');
+Assert.eq(L.autoLayout(mk(3, { tagline: 'x'.repeat(46) })), 'split-left',
+          'layout: auto picks split-left for long tagline');
+Assert.eq(L.autoLayout(mk(3)), 'split-right', 'layout: auto falls through to split-right');
+// diagonal tidak pernah jadi pilihan auto - ia hanya masuk lewat render set
+// atau kalau diminta eksplisit. Kalau suatu saat autoLayout memilihnya, ini
+// yang jadi alarmnya.
+[1, 2, 3, 4, 5, 6].forEach(function (n) {
+  Assert.ok(L.autoLayout(mk(n)) !== 'diagonal',
+            'layout: auto never picks diagonal (' + n + ' screens)');
+});
+
+Assert.eq(L.renderSet(mk(1)), ['solo'], 'layout: render set for 1 screen is solo alone');
+Assert.eq(L.renderSet(mk(2)), ['duo', 'split-right', 'split-left', 'solo'],
+          'layout: render set for 2 screens holds four, duo first');
+Assert.eq(L.renderSet(mk(3)), ['split-right', 'split-left', 'diagonal', 'centered'],
+          'layout: render set for 3 screens holds four without scatter');
+Assert.eq(L.renderSet(mk(4)), ['split-right', 'split-left', 'diagonal', 'centered'],
+          'layout: render set for 4 screens holds four without scatter, auto first');
+Assert.eq(L.renderSet(mk(5)), ['scatter', 'split-right', 'split-left', 'diagonal'],
+          'layout: render set for 5 screens holds four with scatter first');
+Assert.eq(L.renderSet(mk(6)), ['scatter', 'split-right', 'split-left', 'diagonal'],
+          'layout: render set for 6 screens holds four with scatter first');
+Assert.eq(L.renderSet(mk(6, { layout: 'centered' })), ['centered'],
+          'layout: explicit layout renders exactly one');
+Assert.eq(L.renderSet(mk(6, { layout: 'diagonal' })), ['diagonal'],
+          'layout: explicit diagonal renders exactly one');
+</script>
+
+<script src="../skills/project-cover-maker/assets/js/decor.js"></script>
+<script>
+var D = CoverMaker.decor;
+
+['brush', 'blob', 'dots', 'grid'].forEach(function (k) {
+  Assert.ok(typeof D.SHAPES[k] === 'string' && D.SHAPES[k].indexOf('<svg') === 0,
+            'decor: SHAPES.' + k + ' is inline svg markup');
+  Assert.ok(D.SHAPES[k].indexOf('currentColor') !== -1,
+            'decor: SHAPES.' + k + ' is recolourable via currentColor');
+  Assert.ok(D.SHAPES[k].indexOf('http') === -1,
+            'decor: SHAPES.' + k + ' has no external reference');
+});
+
+Assert.eq(D.forArchetype('split-right'), 'brush', 'decor: split-right maps to brush');
+Assert.eq(D.forArchetype('split-left'), 'brush', 'decor: split-left maps to brush');
+Assert.eq(D.forArchetype('centered'), 'dots', 'decor: centered maps to dots');
+Assert.eq(D.forArchetype('diagonal'), 'grid', 'decor: diagonal maps to grid');
+Assert.eq(D.forArchetype('scatter'), 'blob', 'decor: scatter maps to blob');
+Assert.eq(D.forArchetype('duo'), 'brush', 'decor: duo maps to brush');
+Assert.eq(D.forArchetype('solo'), 'blob', 'decor: solo maps to blob');
+
+Assert.eq(D.resolve('none', 'centered'), null, 'decor: none resolves to null');
+Assert.eq(D.resolve('grid', 'centered'), D.SHAPES.grid, 'decor: explicit choice wins over archetype');
+Assert.eq(D.resolve('auto', 'centered'), D.SHAPES.dots, 'decor: auto follows the archetype');
+</script>
+
+<script src="../skills/project-cover-maker/assets/js/render.js"></script>
+<script>
+// render.js auto-mounts only when window.COVER_DATA is set (see its bottom
+// guard), which it is not here, so loading it standalone is safe and just
+// exposes CoverMaker.render for these tests.
+var R = CoverMaker.render;
+
+// --- screen-quality warnings: pure function, no image loading needed ---
+Assert.eq(R.checkScreenQuality(1080, 2400), null,
+          'screen-quality: a normal portrait phone shot passes clean');
+Assert.eq(R.checkScreenQuality(400, 866), null,
+          'screen-quality: exactly 400px wide does not warn (boundary)');
+Assert.ok((R.checkScreenQuality(320, 693) || '').indexOf('320px wide') !== -1,
+          'screen-quality: <400px width warns about softness and names the width');
+Assert.ok((R.checkScreenQuality(1624, 750) || '').indexOf('landscape') !== -1,
+          'screen-quality: a landscape screenshot warns and says "landscape"');
+Assert.ok((R.checkScreenQuality(768, 1024) || '').indexOf('tablet-shaped') !== -1,
+          'screen-quality: a tablet-shaped portrait screenshot warns and says "tablet-shaped"');
+Assert.eq(R.checkScreenQuality(0, 0), 'screen is only 0px wide; it will look soft at scale 2',
+          'screen-quality: zero-size probe does not throw and reports as too narrow');
+</script>

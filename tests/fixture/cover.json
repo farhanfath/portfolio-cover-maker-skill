@@ -1,0 +1,16 @@
+{
+  "project": {
+    "name": "TripMate",
+    "tagline": "Your smart travel assistant for seamless exploration"
+  },
+  "screens": [
+    { "src": "home.png",   "role": "hero" },
+    { "src": "chat.png",   "role": "support" },
+    { "src": "detail.png", "role": "support" }
+  ],
+  "meta": "C241-PS064",
+  "layout": "auto",
+  "palette": { "mode": "auto" },
+  "decor": "auto",
+  "output": { "dir": "../../cover-output-test", "scale": 2 }
+}

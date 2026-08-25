@@ -1,0 +1,214 @@
+/* Kanvas logis 1600x900. zoom menaikkan seluruhnya ke skala render. */
+html { zoom: var(--scale, 2); }
+html, body { margin: 0; padding: 0; background: #fff; }
+
+.canvas {
+  position: relative;
+  width: 1600px;
+  height: 900px;
+  overflow: hidden;
+  background: linear-gradient(135deg, var(--surface-a) 0%, var(--surface-b) 100%);
+  font-family: Inter, system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* --- lapisan dekorasi --- */
+.decor {
+  position: absolute;
+  inset: 0;
+  color: var(--accent);
+  opacity: .16;
+  pointer-events: none;
+}
+.decor svg { width: 100%; height: 100%; display: block; }
+
+/* --- device frame --- */
+.phone {
+  --pw: 300px;
+  position: absolute;
+  width: var(--pw);
+  aspect-ratio: 9 / 19.5;
+  padding: calc(var(--pw) * .011);
+  border-radius: calc(var(--pw) * .049);   /* 0.038 radius layar + 0.011 bezel */
+  background: #111318;
+  box-sizing: border-box;
+  box-shadow:
+    0 calc(var(--pw) * .09) calc(var(--pw) * .19) rgba(14, 22, 30, .18),
+    0 calc(var(--pw) * .02) calc(var(--pw) * .05) rgba(14, 22, 30, .22);
+}
+.phone::after {                            /* notch */
+  content: '';
+  position: absolute;
+  top: calc(var(--pw) * .022);
+  left: 50%;
+  transform: translateX(-50%);
+  width: calc(var(--pw) * .30);
+  height: calc(var(--pw) * .055);
+  border-radius: 999px;
+  background: #111318;
+  z-index: 2;
+}
+.phone__screen {
+  width: 100%;
+  height: 100%;
+  border-radius: calc(var(--pw) * .038);
+  overflow: hidden;
+  background: #fff;
+}
+.phone__screen img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: top;   /* rasio meleset dipotong dari bawah, tidak digepengkan */
+  display: block;
+}
+
+/* --- blok teks --- */
+.copy { position: absolute; }
+.copy__logo { display: block; max-height: 96px; max-width: 300px; margin-bottom: 28px; }
+.copy__logo--boxed {
+  background: #fff;
+  border-radius: 24px;
+  padding: 14px 18px;
+  box-shadow: 0 8px 22px rgba(14, 22, 30, .10);
+  box-sizing: content-box;
+}
+.copy__name {
+  font-family: Outfit, system-ui, sans-serif;
+  font-weight: 700;
+  color: var(--base);
+  line-height: .98;
+  letter-spacing: -.02em;
+  margin: 0;
+  white-space: nowrap;
+  /* Filet keras di belakang fitWordmark's JS shrink loop (render.js): shrink
+     berhenti di 28px meski masih meluber. Ini menjamin nama tidak pernah
+     bocor ke luar kolomnya, terlepas dari apa yang JS lakukan. */
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
+.copy__rule {
+  height: 4px;
+  width: 190px;
+  background: var(--accent);
+  border-radius: 999px;
+  margin: 26px 0 24px;
+}
+.copy__tagline {
+  font-size: 34px;
+  line-height: 1.35;
+  color: var(--ink);
+  margin: 0;
+  max-width: 620px;
+}
+.copy__badges { display: flex; align-items: center; gap: 22px; margin-top: 44px; }
+.copy__badges img { max-height: 68px; max-width: 190px; object-fit: contain; }
+.copy__meta {
+  font-family: Outfit, system-ui, sans-serif;
+  font-weight: 600;
+  font-size: 30px;
+  letter-spacing: .04em;
+  color: var(--accent);
+  margin-top: 26px;
+}
+
+/* --- arketipe: solo --- */
+.layout-solo .copy { left: 110px; top: 50%; transform: translateY(-50%); width: 640px; }
+.layout-solo .stage { position: absolute; right: 130px; top: 50%; transform: translateY(-50%); }
+.layout-solo .stage .phone { --pw: 380px; position: relative; transform: rotate(-5deg); }
+/* solo hanya menampilkan satu HP (selalu hero, yang di-mount lebih dulu oleh
+   render.js); screens pendukung tetap ada di DOM tapi disembunyikan supaya
+   tidak menumpuk dalam alur normal (position: relative di atas).
+   Semua arketipe memakai idiom :nth-child(n+N) yang sama untuk menyembunyikan
+   slot HP surplus - lihat catatan di bagian bawah file ini. */
+.layout-solo .stage .phone:nth-child(n+2) { display: none; }
+.layout-solo .decor { opacity: .14; }
+
+/* --- arketipe: split-right (mockup kiri, teks kanan) --- */
+.layout-split-right .stage { position: absolute; left: 40px; top: 0; width: 800px; height: 900px; }
+.layout-split-right .stage .phone:nth-child(1) { --pw: 340px; left: 200px; top: 96px;  z-index: 1; }
+.layout-split-right .stage .phone:nth-child(2) { --pw: 292px; left: 10px;  top: 300px; z-index: 3; }
+.layout-split-right .stage .phone:nth-child(3) { --pw: 292px; left: 430px; top: 360px; z-index: 2; }
+.layout-split-right .stage .phone:nth-child(n+4) { display: none; }
+.layout-split-right .copy { right: 100px; top: 50%; transform: translateY(-50%); width: 610px; }
+.layout-split-right .decor { opacity: .18; }
+
+/* --- arketipe: split-left (cermin) --- */
+.layout-split-left .stage { position: absolute; right: 40px; top: 0; width: 800px; height: 900px; }
+.layout-split-left .stage .phone:nth-child(1) { --pw: 340px; right: 200px; top: 96px;  z-index: 1; }
+.layout-split-left .stage .phone:nth-child(2) { --pw: 292px; right: 10px;  top: 300px; z-index: 3; }
+.layout-split-left .stage .phone:nth-child(3) { --pw: 292px; right: 430px; top: 360px; z-index: 2; }
+.layout-split-left .stage .phone:nth-child(n+4) { display: none; }
+.layout-split-left .copy { left: 100px; top: 50%; transform: translateY(-50%); width: 610px; }
+.layout-split-left .decor { opacity: .18; transform: scaleX(-1); }
+
+/* --- arketipe: centered (teks atas tengah, HP berjajar bleed bawah) --- */
+.layout-centered .copy {
+  left: 50%; top: 72px; transform: translateX(-50%);
+  width: 1100px; text-align: center;
+}
+.layout-centered .copy__logo { margin-left: auto; margin-right: auto; }
+.layout-centered .copy__name { letter-spacing: .06em; }
+.layout-centered .copy__rule { margin-left: auto; margin-right: auto; }
+.layout-centered .copy__tagline { margin-left: auto; margin-right: auto; max-width: 900px; }
+.layout-centered .copy__badges { justify-content: center; }
+
+.layout-centered .stage { position: absolute; left: 0; right: 0; top: 470px; height: 430px; }
+.layout-centered .stage .phone:nth-child(1) { --pw: 300px; left: 50%; margin-left: -150px; top: 0;   z-index: 3; }
+.layout-centered .stage .phone:nth-child(2) { --pw: 268px; left: 50%; margin-left: -520px; top: 60px; z-index: 2; }
+.layout-centered .stage .phone:nth-child(3) { --pw: 268px; left: 50%; margin-left: 252px;  top: 60px; z-index: 2; }
+.layout-centered .stage .phone:nth-child(n+4) { display: none; }
+.layout-centered .decor { opacity: .22; }
+
+/* --- arketipe: scatter (HP miring tersebar, sebagian bleed keluar) ---
+   Enam slot diposisikan agar tak ada yang terkubur total oleh yang lain:
+   hero besar di tengah dan selalu paling depan (z-index tertinggi), lalu dua
+   pasang pendukung yang masing-masing dijauhkan dari jejak persegi milik
+   pendukung lain: kiri-atas (2) dan kiri-bawah (4) dipisah vertikal sampai
+   kotaknya sama sekali tidak beririsan; kanan-atas (3) dan kanan-bawah (5)
+   begitu juga. Satu-satunya irisan kotak yang tersisa adalah hero menimpa
+   sudut kartu (3) dan (6) - irisan itu berhenti sebelum menyentuh 30% atas
+   tiap kotak, yaitu pita header (notch + judul layar), jadi tak ada judul
+   yang tertutup. Bleed di tepi kiri/atas/bawah kanvas tetap disengaja. */
+.layout-scatter .stage { position: absolute; left: 0; top: 0; width: 980px; height: 900px; }
+.layout-scatter .stage .phone { transform-origin: center; }
+.layout-scatter .stage .phone:nth-child(1) { --pw: 300px; left: 470px; top: 130px; transform: rotate(3deg);  z-index: 6; }
+.layout-scatter .stage .phone:nth-child(2) { --pw: 230px; left: -40px; top: 30px;  transform: rotate(-7deg); z-index: 4; }
+.layout-scatter .stage .phone:nth-child(3) { --pw: 210px; left: 650px; top: -20px; transform: rotate(6deg);  z-index: 3; }
+.layout-scatter .stage .phone:nth-child(4) { --pw: 210px; left: 10px;  top: 580px; transform: rotate(-5deg); z-index: 2; }
+.layout-scatter .stage .phone:nth-child(5) { --pw: 210px; left: 620px; top: 800px; transform: rotate(-4deg); z-index: 2; }
+.layout-scatter .stage .phone:nth-child(6) { --pw: 190px; left: 270px; top: 680px; transform: rotate(-3deg); z-index: 1; }
+.layout-scatter .stage .phone:nth-child(n+7) { display: none; }
+.layout-scatter .copy { right: 90px; top: 50%; transform: translateY(-50%); width: 560px; }
+.layout-scatter .decor { opacity: .20; }
+
+/* --- arketipe: duo (dua HP tegak bertumpuk di kanan, teks kiri) ---
+   Acuan example/cover5.webp. Bedanya dengan split-left: HP-nya tidak
+   dimiringkan sama sekali dan hanya ada dua, jadi kedua screenshot terbaca
+   penuh. Tumpang tindihnya sengaja tipis (30px, ~9% lebar HP belakang) dan
+   berhenti jauh dari pita header HP belakang, jadi judul layar di belakang
+   tetap kebaca. Keduanya bleed keluar batas bawah kanvas. */
+.layout-duo .stage { position: absolute; right: 0; top: 0; width: 780px; height: 900px; }
+.layout-duo .stage .phone:nth-child(1) { --pw: 320px; left: 80px;  top: 300px; z-index: 2; }
+.layout-duo .stage .phone:nth-child(2) { --pw: 340px; left: 370px; top: 185px; z-index: 1; }
+.layout-duo .stage .phone:nth-child(n+3) { display: none; }
+.layout-duo .copy { left: 110px; top: 50%; transform: translateY(-50%); width: 640px; }
+.layout-duo .decor { opacity: .16; transform: scaleX(-1); }
+
+/* --- arketipe: diagonal (kisi HP miring seragam, bleed atas/kanan) ---
+   Acuan example/cover4.webp. Semua HP dimiringkan pada sudut yang sama
+   (12deg) dan disusun sebagai kisi diagonal, bukan disebar acak seperti
+   scatter: hero utuh di tengah-kanan, dua kartu di atasnya hanya kelihatan
+   bagian bawahnya (bleed ke atas), satu lagi cuma sepotong di tepi kanan.
+   Hanya empat slot yang diberi posisi - itu jumlah yang muat tanpa saling
+   mengubur pada rotasi sebesar ini; screen ke-5 dan ke-6 disembunyikan. */
+.layout-diagonal .stage { position: absolute; left: 0; top: 0; width: 1600px; height: 900px; }
+.layout-diagonal .stage .phone { transform-origin: center; transform: rotate(12deg); }
+.layout-diagonal .stage .phone:nth-child(1) { --pw: 330px; left: 985px;  top: 112px;  z-index: 4; }
+.layout-diagonal .stage .phone:nth-child(2) { --pw: 300px; left: 750px;  top: -495px; z-index: 3; }
+.layout-diagonal .stage .phone:nth-child(3) { --pw: 300px; left: 1270px; top: -435px; z-index: 2; }
+.layout-diagonal .stage .phone:nth-child(4) { --pw: 300px; left: 1510px; top: 195px;  z-index: 1; }
+.layout-diagonal .stage .phone:nth-child(n+5) { display: none; }
+.layout-diagonal .copy { left: 110px; top: 50%; transform: translateY(-50%); width: 620px; }
+.layout-diagonal .decor { opacity: .14; }
