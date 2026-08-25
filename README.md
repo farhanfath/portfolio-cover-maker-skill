@@ -40,26 +40,16 @@ The one worth preferring: it keeps itself up to date, and nothing lands in your 
 
 ### Anywhere else — npx
 
-For Claude Desktop, or any client that reads a `skills/` directory:
+Codex, Cursor, OpenCode, Claude Desktop, and anything else that reads a skills
+directory, via the [`skills`](https://github.com/vercel-labs/skills) CLI:
 
 ```bash
-npx project-cover-maker
+npx skills add https://github.com/farhanfath/portfolio-cover-maker-skill
 ```
 
-Copies the skill into `~/.claude/skills/project-cover-maker`. Nothing is installed
-globally and the package has no dependencies — it is a copy step, not a runtime.
-
-```bash
-npx project-cover-maker --project      # into ./.claude/skills/ instead, for one repo
-npx project-cover-maker --dir <path>   # into an exact directory
-npx project-cover-maker --help
-```
-
-Re-run it to update. It refuses to touch the target if something unrelated is already
-sitting there, so it won't quietly eat another skill that happens to share the name.
-
-Updating means re-running the command yourself — there's no background check on this
-path. That's the trade for not needing the plugin system.
+Add `-g` to install globally instead of into the current project, `-a <agent>` to pick
+which agents get it. Update later with `npx skills update`, remove with
+`npx skills remove`.
 
 <details>
 <summary>Or just clone it</summary>
@@ -69,7 +59,7 @@ git clone https://github.com/farhanfath/portfolio-cover-maker-skill.git \
   ~/.claude/skills/project-cover-maker
 ```
 
-Same result, plus the tests and the plugin manifests you don't need.
+Same result, plus the tests you don't need.
 </details>
 
 ## Requirements
@@ -180,8 +170,7 @@ version. To pull one immediately:
 /plugin marketplace update farhanfath-skills
 ```
 
-Installed via npx, re-run `npx project-cover-maker` — it overwrites in place and tells
-you which version it wrote.
+Installed through the `skills` CLI, run `npx skills update`.
 
 What changed in each release is in [CHANGELOG.md](CHANGELOG.md).
 
@@ -194,17 +183,18 @@ scripts/render.{sh,ps1}   builds a self-contained page, screenshots it headless
 references/layouts.md     anatomy of all seven archetypes
 references/capture-adb.md the adb capture protocol
 example/                  reference covers the archetypes were designed against
-bin/install.js            the npx installer
 .claude-plugin/           plugin and marketplace manifests
 docs/preview/             the sample output shown above
 tests/                    fixture-based end-to-end render tests
 ```
 
+`SKILL.md` sits at the repo root on purpose: that is the single-skill plugin layout, and
+it is also what the `skills` CLI discovers first. One tree serves both install paths.
+
 Run the tests with `bash tests/run.sh` or `powershell -File tests\run.ps1`.
 
-Releases go out on two channels with separate version numbers —
-`.claude-plugin/plugin.json` for the marketplace, `package.json` for npm — so the suite
-fails if they drift. Bump both.
+To cut a release, bump `version` in `.claude-plugin/plugin.json` — Claude Code only
+offers users an update when that field changes.
 
 ## License
 

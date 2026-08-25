@@ -6,7 +6,3 @@ render-*.html
 .DS_Store
 Thumbs.db
 cover-output-test/
-
-# npm
-node_modules/
-*.tgz

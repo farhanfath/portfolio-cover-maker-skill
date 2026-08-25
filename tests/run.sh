@@ -74,25 +74,4 @@ done
 [ "$E2E_OK" -eq 1 ] && echo "PASS :: e2e render produced 4 valid 3200x1800 covers"
 [ "$E2E_OK" -eq 1 ] || exit 1
 
-# --- Test #7: satu versi, dua file ---
-# Rilis diumumkan lewat dua jalur yang punya nomor versinya masing-masing:
-# plugin.json (dibaca Claude Code untuk menawarkan update) dan package.json
-# (dibaca npm). Kalau salah satu lupa dinaikkan, separuh pengguna tidak pernah
-# ditawari update dan tidak ada yang error - itu diam-diamnya berbahaya.
-ver_of() {
-  grep -oE '"version"[[:space:]]*:[[:space:]]*"[^"]*"' "$1" | head -1 |
-    sed -E 's/.*"([^"]*)"[[:space:]]*$/\1/'
-}
-PLUGIN_VER="$(ver_of "$HERE/../.claude-plugin/plugin.json")"
-NPM_VER="$(ver_of "$HERE/../package.json")"
-if [ -z "$PLUGIN_VER" ] || [ -z "$NPM_VER" ]; then
-  echo "FAIL :: could not read version from plugin.json ('$PLUGIN_VER') or package.json ('$NPM_VER')"
-  exit 1
-fi
-if [ "$PLUGIN_VER" != "$NPM_VER" ]; then
-  echo "FAIL :: version drift :: plugin.json=$PLUGIN_VER package.json=$NPM_VER"
-  exit 1
-fi
-echo "PASS :: plugin.json and package.json agree on version $PLUGIN_VER"
-
 echo "--- unit tests passed ---"
